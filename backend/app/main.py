@@ -2,15 +2,13 @@ from fastapi import FastAPI
 
 app = FastAPI(
     title="AI Workforce OS",
-    description="AI Employee Platform",
     version="0.1.0"
 )
 
 @app.get("/")
 def root():
     return {
-        "project": "AI Workforce OS",
-        "status": "running",
+        "message": "AI Workforce OS is running",
         "employee": "Sales AI Employee #001"
     }
 
