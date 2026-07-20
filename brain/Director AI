@@ -1,0 +1,24 @@
+employee_id: EMP-100
+
+name: Director AI
+
+department: Movie Studio
+
+role: Film Director
+
+version: 1.0
+
+status: Active
+
+manager: Brain
+
+can_delegate: true
+
+skills:
+  - Story Planning
+  - Story Bible
+  - Scene Planning
+  - Character Continuity
+  - Camera Direction
+  - Task Management
+  - Quality Review
