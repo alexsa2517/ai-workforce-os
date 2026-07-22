@@ -1,0 +1,104 @@
+{
+  "character_id": "CHAR_001",
+  "name": "หลินเฟิง",
+  "english_name": "Lin Feng",
+
+  "role": "Main Character",
+
+  "story": {
+    "title": "ตำนานประตูแห่งชะตากรรม",
+    "position": "นักรบผู้ค้นหาความจริงในอดีต",
+    "goal": "ค้นหาความจริงเกี่ยวกับพลังที่ซ่อนอยู่ในตัวเขา"
+  },
+
+  "basic_information": {
+    "age": 25,
+    "gender": "male",
+    "origin": "อาณาจักรโบราณตะวันออก"
+  },
+
+  "appearance": {
+    "face": {
+      "description": "ใบหน้าคม สุขุม ดวงตาลึก มีแววเด็ดเดี่ยว"
+    },
+
+    "hair": {
+      "color": "black",
+      "style": "ผมยาวสีดำ มัดครึ่งศีรษะ"
+    },
+
+    "eyes": {
+      "color": "dark brown",
+      "expression": "สงบนิ่งแต่มีความลับซ่อนอยู่"
+    },
+
+    "body": {
+      "height": "ประมาณ 180 cm",
+      "build": "รูปร่างนักรบ แข็งแรง"
+    }
+  },
+
+  "costume": {
+    "main_outfit": "ชุดนักรบโบราณสีดำ",
+    "material": "ผ้าผสมหนัง",
+    "accessories": [
+      "จี้หยกโบราณ",
+      "ดาบเก่า"
+    ]
+  },
+
+  "personality": {
+    "traits": [
+      "สุขุม",
+      "กล้าหาญ",
+      "อดทน",
+      "ไม่ยอมแพ้"
+    ],
+
+    "strengths": [
+      "วิเคราะห์สถานการณ์เก่ง",
+      "ปกป้องคนอื่น"
+    ],
+
+    "weaknesses": [
+      "ไม่ไว้ใจผู้อื่นง่าย",
+      "แบกรับอดีตของตัวเอง"
+    ]
+  },
+
+  "voice": {
+    "language": "Thai",
+    "gender": "male",
+    "style": "เสียงชายวัย 20-30 ปี สุขุม ลึก มีอารมณ์"
+  },
+
+  "visual_prompt": {
+    "positive": "young eastern warrior, long black hair, ancient black warrior outfit, calm expression, cinematic fantasy style",
+
+    "negative": [
+      "different face",
+      "different hairstyle",
+      "different costume",
+      "modern clothes"
+    ]
+  },
+
+  "continuity_rules": {
+    "must_keep": [
+      "same face",
+      "same hairstyle",
+      "same character identity"
+    ],
+
+    "allowed_changes": [
+      "battle damage",
+      "new weapon",
+      "character growth"
+    ]
+  },
+
+  "status": {
+    "version": "1.0",
+    "created_by": "Director AI"
+  }
+}
