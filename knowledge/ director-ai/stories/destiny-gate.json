@@ -1,0 +1,108 @@
+{
+  "story_id": "STORY_001",
+
+  "title": "ตำนานประตูแห่งชะตากรรม",
+  "english_title": "The Destiny Gate",
+
+  "genre": [
+    "Fantasy",
+    "Adventure",
+    "Mystery"
+  ],
+
+  "language": "Thai",
+
+  "target_audience": "Global fantasy story audience",
+
+  "format": {
+    "type": "AI cinematic series",
+    "total_episodes": 100,
+    "episode_duration": "1-3 minutes"
+  },
+
+
+  "logline": "นักรบหนุ่มผู้สูญเสียความทรงจำ ค้นพบประตูโบราณที่เชื่อมต่อกับอดีต และต้องค้นหาความจริงก่อนที่พลังมืดจะทำลายโลก",
+
+
+  "world": {
+    "name": "อาณาจักรแห่งชะตากรรม",
+    "era": "Ancient fantasy era",
+    "theme": "มนุษย์ เทพ และพลังลึกลับ"
+  },
+
+
+  "main_characters": [
+    {
+      "id": "CHAR_001",
+      "name": "หลินเฟิง",
+      "role": "Hero",
+      "goal": "ค้นหาความจริงเกี่ยวกับอดีตของตนเอง"
+    }
+  ],
+
+
+  "main_conflict": {
+    "hero": "หลินเฟิง",
+    "enemy": "พลังมืดที่ต้องการเปิดประตูต้องห้าม",
+    "conflict": "การต่อสู้ระหว่างชะตากรรมของมนุษย์และพลังโบราณ"
+  },
+
+
+  "story_arc": {
+
+    "arc_1": {
+      "name": "การตื่นขึ้น",
+      "episodes": "1-20",
+      "description": "หลินเฟิงค้นพบพลังและเบาะแสเกี่ยวกับอดีต"
+    },
+
+    "arc_2": {
+      "name": "ความจริงที่ถูกซ่อน",
+      "episodes": "21-50",
+      "description": "เปิดเผยความลับของอาณาจักรโบราณ"
+    },
+
+    "arc_3": {
+      "name": "สงครามแห่งชะตากรรม",
+      "episodes": "51-90",
+      "description": "การต่อสู้ระหว่างมนุษย์และพลังมืด"
+    },
+
+    "arc_4": {
+      "name": "ประตูสุดท้าย",
+      "episodes": "91-100",
+      "description": "การตัดสินชะตากรรมของโลก"
+    }
+  },
+
+
+  "story_rules": [
+    "ตัวละครต้องมีพัฒนาการตามเหตุการณ์",
+    "ไม่มีการแก้ปัญหาด้วยพลังแบบไม่มีข้อจำกัด",
+    "ทุกพลังต้องมีผลกระทบ",
+    "ความลับสำคัญต้องเปิดเผยทีละขั้น"
+  ],
+
+
+  "visual_style": {
+    "style": "cinematic fantasy",
+    "quality": "realistic",
+    "lighting": "dramatic cinematic lighting",
+    "camera": "movie style"
+  },
+
+
+  "episode_structure": {
+    "opening": "Hook ภายใน 5 วินาทีแรก",
+
+    "middle": "เกิดปัญหาและเปิดเผยข้อมูลใหม่",
+
+    "ending": "จบด้วย Cliffhanger"
+  },
+
+
+  "status": {
+    "version": "1.0",
+    "created_by": "Director AI"
+  }
+}
