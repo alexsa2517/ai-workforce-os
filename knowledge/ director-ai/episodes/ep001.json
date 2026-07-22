@@ -1,0 +1,49 @@
+{
+  "episode_id": "EP001",
+
+  "title": "เสียงเรียกจากป่าหมอก",
+
+  "story": "หลินเฟิงตื่นขึ้นในป่าโบราณและพบสัญญาณแรกของประตูแห่งชะตากรรม",
+
+  "characters": [
+    "CHAR_001"
+  ],
+
+  "world": "WORLD_001",
+
+  "scenes": [
+    {
+      "scene_id": "SCENE_001",
+
+      "title": "หญิงสาวในป่าหมอก",
+
+      "location": "ป่าหมอกนิรันดร์",
+
+      "time": "รุ่งเช้า",
+
+      "action": "หลินเฟิงเดินผ่านหมอกและค้นหาความจริง",
+
+      "emotion": "สับสน ระวังตัว",
+
+      "dialogue": {
+        "character": "หลินเฟิง",
+        "text": "ที่นี่คือที่ไหน... ทำไมข้าถึงมาอยู่ที่นี่"
+      },
+
+      "camera": {
+        "shot": "wide cinematic shot",
+        "movement": "slow tracking shot"
+      },
+
+      "status": "planned"
+    }
+  ],
+
+
+  "production_status": {
+    "script": "ready",
+    "image": "pending",
+    "video": "pending",
+    "voice": "pending"
+  }
+}
