@@ -11,7 +11,7 @@ class DirectorAI:
 
     def create_scene(self):
         
-        character = self.memory.load_character("linfeng")
+        character = self.memory.load_character("linhfeng")
 
         world = self.memory.load_world("ancient-world")
 

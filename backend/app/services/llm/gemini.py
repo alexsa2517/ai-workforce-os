@@ -1,6 +1,6 @@
 import os
 
-from google import genai
+import google.generativeai as genai
 from dotenv import load_dotenv
 
 
@@ -11,16 +11,12 @@ class GeminiClient:
 
     def __init__(self):
 
-        self.client = genai.Client(
-            api_key=os.getenv("GEMINI_API_KEY")
-        )
+        genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+        self.model = genai.GenerativeModel("gemini-1.5-pro")
 
 
     def generate(self, prompt: str):
 
-        response = self.client.models.generate_content(
-            model="gemini-2.5-pro",
-            contents=prompt
-        )
+        response = self.model.generate_content(prompt)
 
         return response.text
