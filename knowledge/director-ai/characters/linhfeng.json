@@ -29,7 +29,19 @@
 
     "eyes": {
       "color": "dark brown",
-      "expression": "สงบนิ่งแต่มีความลับซ่อนอยู่"
+      "expression": "สงบนิ่งแต่มีความลับซ่อนอยู่",
+      "blink_rate": "natural (15-20 blinks per minute)",
+      "gaze_style": "focused, steady, occasional micro-movements",
+      "detail": "intense iris texture, subtle moisture reflection"
+    },
+    "facial_dynamics": {
+      "micro_expressions": [
+        "subtle eyebrow twitch when thinking",
+        "slight lip tension when focused",
+        "gentle squinting in bright light"
+      ],
+      "skin_texture": "realistic skin pores, subtle sweat in intense scenes",
+      "natural_movements": "subtle head tilts, natural jaw relaxation"
     },
 
     "body": {
