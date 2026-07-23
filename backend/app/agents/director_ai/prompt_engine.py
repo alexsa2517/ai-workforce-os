@@ -60,6 +60,15 @@ Dialogue:
 Thai language,
 natural Thai voice.
 
+Audio/Speech Instructions:
+Voice Profile: {character['voice']['archetype']} ({character['voice']['gender']})
+Estimated Age: {character['voice']['age_years']} years old
+Tone: {character['voice']['tone']}
+Pitch: {character['voice']['pitch']}
+Speed: {character['voice']['speed']}
+Vocal Traits: {', '.join(character['voice']['vocal_traits'])}
+Speech Style: Natural Thai articulation with emotional depth corresponding to {scene['emotion']}
+
 
 Style:
 Realistic fantasy film,

@@ -81,7 +81,17 @@
   "voice": {
     "language": "Thai",
     "gender": "male",
-    "style": "เสียงชายวัย 20-30 ปี สุขุม ลึก มีอารมณ์"
+    "archetype": "hero",
+    "age_bracket": "young-adult",
+    "age_years": 25,
+    "tone": "deep, calm, heroic",
+    "vocal_traits": [
+      "steady breathing",
+      "clear articulation",
+      "authoritative but gentle"
+    ],
+    "pitch": "medium-low",
+    "speed": 0.95
   },
 
   "visual_prompt": {
