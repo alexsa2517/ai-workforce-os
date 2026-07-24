@@ -82,10 +82,12 @@ Emotion:
 {scene['emotion']}
 
 
-Camera:
-Cinematic camera movement,
-movie style,
-dramatic lighting.
+Camera & Cinematography:
+- Movement Style: Cinematic camera movement with natural handheld shake if intense, or smooth tracking if calm.
+- Shot Type: Dynamic framing based on {scene['emotion']}, utilizing Rule of Thirds and Leading Lines.
+- Lens & Focus: Shallow depth of field, 35mm cinematic lens, realistic rack focus on {character['name']}'s eyes during dialogue.
+- Angles: Use Dutch tilts for tension, low angles for power, and close-ups for emotional depth.
+- Lighting Integration: Dramatic lighting that interacts with the environment and character's micro-movements.
 
 
 Dialogue:
