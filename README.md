@@ -76,6 +76,13 @@ The `DirectorAI` agent is responsible for generating scenes based on loaded know
 
 The project integrates with various Large Language Models (LLMs) through a factory pattern. The `LLMFactory` in `backend/app/services/llm/factory.py` provides a unified interface to interact with different LLM providers such as OpenAI and Gemini.
 
+## AI Development Tools
+
+This project is optimized for AI-assisted development:
+
+- **Aider:** You can use [Aider](https://aider.chat/) to collaborate with LLMs (like DeepSeek or GPT-4o) directly in your terminal to edit and create files.
+- **Environment Setup:** Ensure you have your `DEEPSEEK_API_KEY` or `OPENAI_API_KEY` set in your environment or a `.env` file to enable AI features.
+
 ## Bug Fixes and Improvements (July 2026)
 
 -   **Fixed `knowledge` directory path:** Corrected the directory name from `" director-ai"` to `"director-ai"` to resolve file loading issues for `DirectorAI`.
