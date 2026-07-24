@@ -33,10 +33,14 @@ Natural Idle Movements: {character['appearance']['facial_dynamics']['natural_mov
 
     Speech & Lip-Sync:
 Lip-Sync Precision: {character['appearance']['facial_dynamics']['speech_dynamics']['lip_sync_precision']}
-Jaw Movement: {character['appearance']['facial_dynamics']['speech_dynamics']['jaw_movement']}
-Tongue Visibility: {character['appearance']['facial_dynamics']['speech_dynamics']['tongue_visibility']}
+Thai Phonetic Articulation:
+- Vowels: {character['appearance']['facial_dynamics']['speech_dynamics']['thai_articulation']['vowels']}
+- Consonants: {character['appearance']['facial_dynamics']['speech_dynamics']['thai_articulation']['consonants']}
+- Tonal Influence: {character['appearance']['facial_dynamics']['speech_dynamics']['thai_articulation']['tone_influence']}
+Jaw & Tongue: {character['appearance']['facial_dynamics']['speech_dynamics']['jaw_movement']}, {character['appearance']['facial_dynamics']['speech_dynamics']['tongue_visibility']}
+Emotional Integration: The mouth movements must adapt to the emotion "{scene['emotion']}" as defined in the character's emotional sync rules (e.g., {character['appearance']['facial_dynamics']['speech_dynamics']['emotional_sync'].get(scene['emotion'].lower(), 'natural adaptation')}).
 Facial Muscle Sync: {character['appearance']['facial_dynamics']['speech_dynamics']['secondary_motion']}
-Thai Articulation: Ensure mouth shapes (visemes) perfectly match Thai phonemes and emotional intensity of the dialogue.
+Instructions: Ensure every Thai syllable is perfectly synced with realistic mouth shapes, emphasizing the emotional weight of the Thai dialogue.
 
 Hair:
 {character['appearance']['hair']['style']}

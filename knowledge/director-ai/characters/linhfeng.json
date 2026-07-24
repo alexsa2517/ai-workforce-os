@@ -48,10 +48,21 @@
       "natural_movements": "subtle head tilts, natural jaw relaxation, slight neck muscle tension during speech",
       "blinking_behavior": "natural asynchronous blinking, partial blinks during deep thought",
       "speech_dynamics": {
-        "lip_sync_precision": "high, accurate viseme mapping for Thai phonemes",
-        "jaw_movement": "natural vertical and lateral displacement based on vowel intensity",
-        "tongue_visibility": "subtle visibility during open vowels (a, e, o)",
-        "secondary_motion": "cheeks and nasolabial folds react to mouth shape changes"
+        "lip_sync_precision": "ultra-high, specialized for Thai tonal phonetics",
+        "thai_articulation": {
+          "vowels": "precise mouth opening for Thai long/short vowels (a, ee, oo, uo)",
+          "consonants": "accurate labial and dental placement for Thai sounds (p, b, m, f, th)",
+          "tone_influence": "subtle facial muscle tension changes based on Thai tones (high, low, falling, rising)"
+        },
+        "jaw_movement": "natural vertical and lateral displacement based on vowel intensity and Thai tonal inflections",
+        "tongue_visibility": "subtle visibility during open vowels (a, e, o) and specific Thai dental consonants",
+        "emotional_sync": {
+          "anger": "wide, aggressive mouth movements, increased jaw tension",
+          "sadness": "subtle, quivering lip movements, downward mouth corners",
+          "joy": "upward mouth corners, relaxed jaw, crinkling at the eyes",
+          "determined": "firm, precise mouth movements, slight chin thrust"
+        },
+        "secondary_motion": "cheeks, nasolabial folds, and chin muscles react dynamically to Thai phoneme changes"
       }
     },
 
