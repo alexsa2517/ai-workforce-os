@@ -30,18 +30,23 @@
     "eyes": {
       "color": "dark brown",
       "expression": "สงบนิ่งแต่มีความลับซ่อนอยู่",
-      "blink_rate": "natural (15-20 blinks per minute)",
-      "gaze_style": "focused, steady, occasional micro-movements",
-      "detail": "intense iris texture, subtle moisture reflection"
+      "blink_rate": "dynamic (12-18 blinks per minute, increases when nervous or thinking)",
+      "gaze_style": "focused, steady, with natural saccadic eye movements",
+      "detail": "intense iris texture, subtle moisture reflection, realistic pupil dilation based on lighting and emotion",
+      "eye_contact": "maintains steady contact but naturally breaks to look at objects of interest",
+      "micro_movements": "subtle jitter, tracking moving objects smoothly"
     },
     "facial_dynamics": {
       "micro_expressions": [
         "subtle eyebrow twitch when thinking",
         "slight lip tension when focused",
-        "gentle squinting in bright light"
+        "gentle squinting in bright light",
+        "subtle nostril flare during intense breathing",
+        "micro-smirk when amused"
       ],
-      "skin_texture": "realistic skin pores, subtle sweat in intense scenes",
-      "natural_movements": "subtle head tilts, natural jaw relaxation"
+      "skin_texture": "realistic skin pores, subtle sweat in intense scenes, realistic subsurface scattering for skin",
+      "natural_movements": "subtle head tilts, natural jaw relaxation, slight neck muscle tension during speech",
+      "blinking_behavior": "natural asynchronous blinking, partial blinks during deep thought"
     },
 
     "body": {

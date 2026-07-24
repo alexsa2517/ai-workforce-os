@@ -16,17 +16,20 @@ Character:
 Appearance:
 {character['appearance']['face']['description']}
 
-Eyes:
+    Eyes:
 Color: {character['appearance']['eyes']['color']}
 Expression: {character['appearance']['eyes']['expression']}
-Blink Rate: {character['appearance']['eyes']['blink_rate']}
-Gaze Style: {character['appearance']['eyes']['gaze_style']}
-Eye Detail: {character['appearance']['eyes']['detail']}
+Blink Behavior: {character['appearance']['eyes']['blink_rate']}
+Gaze Dynamics: {character['appearance']['eyes']['gaze_style']}
+Eye Contact: {character['appearance']['eyes']['eye_contact']}
+Micro-Movements: {character['appearance']['eyes']['micro_movements']}
+Detail: {character['appearance']['eyes']['detail']}
 
 Facial Dynamics:
 Micro-expressions: {', '.join(character['appearance']['facial_dynamics']['micro_expressions'])}
-Skin Texture: {character['appearance']['facial_dynamics']['skin_texture']}
-Natural Movements: {character['appearance']['facial_dynamics']['natural_movements']}
+Blinking Style: {character['appearance']['facial_dynamics']['blinking_behavior']}
+Skin & Texture: {character['appearance']['facial_dynamics']['skin_texture']}
+Natural Idle Movements: {character['appearance']['facial_dynamics']['natural_movements']}
 
 Hair:
 {character['appearance']['hair']['style']}

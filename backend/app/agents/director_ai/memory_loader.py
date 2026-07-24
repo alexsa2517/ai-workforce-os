@@ -2,7 +2,9 @@ import json
 from pathlib import Path
 
 
-BASE_PATH = Path("knowledge/director-ai")
+# Resolve path relative to the repository root
+# This ensures it works whether run from root or from backend/ directory
+BASE_PATH = Path(__file__).resolve().parents[4] / "knowledge" / "director-ai"
 
 
 class DirectorMemoryLoader:
