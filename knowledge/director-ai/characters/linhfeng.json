@@ -123,14 +123,22 @@
     "archetype": "hero",
     "age_bracket": "young-adult",
     "age_years": 25,
-    "tone": "deep, calm, heroic",
+    "tone": "deep, calm, heroic, with rich resonance",
     "vocal_traits": [
-      "steady breathing",
-      "clear articulation",
-      "authoritative but gentle"
+      "steady rhythmic breathing",
+      "clear Thai articulation with natural tonal inflections",
+      "authoritative but gentle",
+      "subtle vocal fry in low registers",
+      "realistic aspiration on aspirated consonants (ph, th, kh)"
     ],
     "pitch": "medium-low",
-    "speed": 0.95
+    "speed": 0.95,
+    "advanced_settings": {
+      "resonance": "chest-heavy, warm",
+      "vocal_texture": "smooth with slight graininess in emotional moments",
+      "breathing_pattern": "natural pauses for breath every 2-3 phrases, audible intake during intense scenes",
+      "intonation_style": "melodic Thai prosody, emphasizing key emotional words"
+    }
   },
 
   "visual_prompt": {

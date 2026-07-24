@@ -95,11 +95,14 @@ natural Thai voice.
 Audio/Speech Instructions:
 Voice Profile: {character['voice']['archetype']} ({character['voice']['gender']})
 Estimated Age: {character['voice']['age_years']} years old
-Tone: {character['voice']['tone']}
+Tone & Resonance: {character['voice']['tone']}, {character['voice']['advanced_settings']['resonance']}
+Vocal Texture: {character['voice']['advanced_settings']['vocal_texture']}
 Pitch: {character['voice']['pitch']}
 Speed: {character['voice']['speed']}
 Vocal Traits: {', '.join(character['voice']['vocal_traits'])}
-Speech Style: Natural Thai articulation with emotional depth corresponding to {scene['emotion']}
+Breathing Pattern: {character['voice']['advanced_settings']['breathing_pattern']}
+Intonation & Prosody: {character['voice']['advanced_settings']['intonation_style']}
+Speech Style: Advanced Thai articulation with emotional depth corresponding to {scene['emotion']}. Ensure realistic Thai tonal accuracy and natural flow.
 
 
 Style:
