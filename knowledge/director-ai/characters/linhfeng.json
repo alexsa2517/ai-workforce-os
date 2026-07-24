@@ -68,6 +68,12 @@
         "finger_detail": "natural finger curling, subtle twitching when tense",
         "speech_gestures": "uses hands to emphasize key points, open palms for honesty, closed fists for determination",
         "interaction": "smooth transitions between holding weapons and gesturing"
+      },
+      "environmental_interaction": {
+        "lighting_response": "subtle squinting in bright light, skin glows under moonlight, realistic shadows on face",
+        "weather_response": "hair and clothing react naturally to wind, subtle shivering in cold, moisture on skin in rain",
+        "physics_interaction": "clothing folds react to movement, feet plant firmly on uneven terrain, hands interact realistically with props",
+        "spatial_awareness": "looks towards sound sources or points of interest in the environment"
       }
     }
   },

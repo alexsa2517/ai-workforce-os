@@ -55,6 +55,13 @@ Finger Detail: {character['appearance']['body']['hand_gestures']['finger_detail'
 Speech-Driven Gestures: {character['appearance']['body']['hand_gestures']['speech_gestures']}
 Movement Transitions: {character['appearance']['body']['hand_gestures']['interaction']}
 
+    Environmental Interaction:
+Lighting Response: {character['appearance']['body']['environmental_interaction']['lighting_response']}
+Weather Response: {character['appearance']['body']['environmental_interaction']['weather_response']}
+Physics & Terrain: {character['appearance']['body']['environmental_interaction']['physics_interaction']}
+Spatial Awareness: {character['appearance']['body']['environmental_interaction']['spatial_awareness']}
+Integration: Ensure the character feels grounded in the world, reacting to the lighting, atmosphere, and physical elements of the scene.
+
 
 World:
 {world['description']}
