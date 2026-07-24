@@ -25,11 +25,18 @@ Eye Contact: {character['appearance']['eyes']['eye_contact']}
 Micro-Movements: {character['appearance']['eyes']['micro_movements']}
 Detail: {character['appearance']['eyes']['detail']}
 
-Facial Dynamics:
+    Facial Dynamics:
 Micro-expressions: {', '.join(character['appearance']['facial_dynamics']['micro_expressions'])}
 Blinking Style: {character['appearance']['facial_dynamics']['blinking_behavior']}
 Skin & Texture: {character['appearance']['facial_dynamics']['skin_texture']}
 Natural Idle Movements: {character['appearance']['facial_dynamics']['natural_movements']}
+
+    Speech & Lip-Sync:
+Lip-Sync Precision: {character['appearance']['facial_dynamics']['speech_dynamics']['lip_sync_precision']}
+Jaw Movement: {character['appearance']['facial_dynamics']['speech_dynamics']['jaw_movement']}
+Tongue Visibility: {character['appearance']['facial_dynamics']['speech_dynamics']['tongue_visibility']}
+Facial Muscle Sync: {character['appearance']['facial_dynamics']['speech_dynamics']['secondary_motion']}
+Thai Articulation: Ensure mouth shapes (visemes) perfectly match Thai phonemes and emotional intensity of the dialogue.
 
 Hair:
 {character['appearance']['hair']['style']}

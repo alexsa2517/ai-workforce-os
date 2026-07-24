@@ -46,7 +46,13 @@
       ],
       "skin_texture": "realistic skin pores, subtle sweat in intense scenes, realistic subsurface scattering for skin",
       "natural_movements": "subtle head tilts, natural jaw relaxation, slight neck muscle tension during speech",
-      "blinking_behavior": "natural asynchronous blinking, partial blinks during deep thought"
+      "blinking_behavior": "natural asynchronous blinking, partial blinks during deep thought",
+      "speech_dynamics": {
+        "lip_sync_precision": "high, accurate viseme mapping for Thai phonemes",
+        "jaw_movement": "natural vertical and lateral displacement based on vowel intensity",
+        "tongue_visibility": "subtle visibility during open vowels (a, e, o)",
+        "secondary_motion": "cheeks and nasolabial folds react to mouth shape changes"
+      }
     },
 
     "body": {
