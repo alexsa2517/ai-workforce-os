@@ -44,6 +44,17 @@ Hair:
 Clothing:
 {character['costume']['main_outfit']}
 
+    Body & Posture:
+Posture: {character['appearance']['body']['posture']['base_stance']}
+Idle Behavior: {character['appearance']['body']['posture']['idle_behavior']}
+Shoulder Movement: {character['appearance']['body']['posture']['shoulder_dynamics']}
+
+    Hand & Arm Gestures:
+Gesture Style: {character['appearance']['body']['hand_gestures']['style']}
+Finger Detail: {character['appearance']['body']['hand_gestures']['finger_detail']}
+Speech-Driven Gestures: {character['appearance']['body']['hand_gestures']['speech_gestures']}
+Movement Transitions: {character['appearance']['body']['hand_gestures']['interaction']}
+
 
 World:
 {world['description']}

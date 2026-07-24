@@ -57,7 +57,18 @@
 
     "body": {
       "height": "ประมาณ 180 cm",
-      "build": "รูปร่างนักรบ แข็งแรง"
+      "build": "รูปร่างนักรบ แข็งแรง",
+      "posture": {
+        "base_stance": "upright, balanced, ready for action",
+        "idle_behavior": "subtle weight shifting, natural breathing-driven chest movement",
+        "shoulder_dynamics": "relaxed but firm, slight movement during speech"
+      },
+      "hand_gestures": {
+        "style": "controlled, purposeful, minimal but impactful",
+        "finger_detail": "natural finger curling, subtle twitching when tense",
+        "speech_gestures": "uses hands to emphasize key points, open palms for honesty, closed fists for determination",
+        "interaction": "smooth transitions between holding weapons and gesturing"
+      }
     }
   },
 
