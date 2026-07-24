@@ -42,7 +42,11 @@
         "slight lip tension when focused",
         "gentle squinting in bright light",
         "subtle nostril flare during intense breathing",
-        "micro-smirk when amused"
+        "micro-smirk when amused",
+        "asymmetric lip tension during doubt",
+        "slight eye squinting in a 'Duchenne smile' vs 'Fake smile'",
+        "visible neck muscle strain during suppressed emotion",
+        "subtle eyelid tremor during high anxiety"
       ],
       "skin_texture": "realistic skin pores, subtle sweat in intense scenes, realistic subsurface scattering for skin",
       "natural_movements": "subtle head tilts, natural jaw relaxation, slight neck muscle tension during speech",
@@ -60,7 +64,13 @@
           "anger": "wide, aggressive mouth movements, increased jaw tension",
           "sadness": "subtle, quivering lip movements, downward mouth corners",
           "joy": "upward mouth corners, relaxed jaw, crinkling at the eyes",
-          "determined": "firm, precise mouth movements, slight chin thrust"
+          "determined": "firm, precise mouth movements, slight chin thrust",
+          "layered_emotions": {
+            "suppressed_anger": "clenched jaw with a forced calm expression, subtle nostril flaring, sharp but steady gaze",
+            "bittersweet": "a faint, sad smile with misty eyes, slow and soft speech",
+            "inner_conflict": "rapid eye darting (saccades), asymmetric mouth tension, shallow breathing",
+            "fake_smile": "upward mouth corners without eye crinkling (lack of Duchenne marker), subtle tension in the forehead"
+          }
         },
         "secondary_motion": "cheeks, nasolabial folds, and chin muscles react dynamically to Thai phoneme changes"
       }

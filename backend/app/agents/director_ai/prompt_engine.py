@@ -38,7 +38,10 @@ Thai Phonetic Articulation:
 - Consonants: {character['appearance']['facial_dynamics']['speech_dynamics']['thai_articulation']['consonants']}
 - Tonal Influence: {character['appearance']['facial_dynamics']['speech_dynamics']['thai_articulation']['tone_influence']}
 Jaw & Tongue: {character['appearance']['facial_dynamics']['speech_dynamics']['jaw_movement']}, {character['appearance']['facial_dynamics']['speech_dynamics']['tongue_visibility']}
-Emotional Integration: The mouth movements must adapt to the emotion "{scene['emotion']}" as defined in the character's emotional sync rules (e.g., {character['appearance']['facial_dynamics']['speech_dynamics']['emotional_sync'].get(scene['emotion'].lower(), 'natural adaptation')}).
+Emotional Integration & Subtext:
+- Primary Emotion: {scene['emotion']}
+- Complex Expression: {character['appearance']['facial_dynamics']['speech_dynamics']['emotional_sync']['layered_emotions'].get(scene.get('complex_emotion', '').lower(), 'Adapt naturally to show the character\'s inner state.')}
+- Subtext Articulation: Ensure the facial muscles and lip-sync reflect the conflict between the spoken dialogue and the character's true feelings. Use micro-expressions like asymmetric mouth tension and eye micro-movements to convey hidden depth.
 Facial Muscle Sync: {character['appearance']['facial_dynamics']['speech_dynamics']['secondary_motion']}
 Instructions: Ensure every Thai syllable is perfectly synced with realistic mouth shapes, emphasizing the emotional weight of the Thai dialogue.
 
