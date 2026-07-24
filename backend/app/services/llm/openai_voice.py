@@ -25,15 +25,14 @@ class OpenAIVoiceClient:
         speed = character_voice_data.get("speed", 1.0)
 
         # 3. เรียก OpenAI TTS API
-        response = self.client.audio.speech.create(
+        with self.client.audio.speech.with_streaming_response.create(
             model="tts-1",
             voice=voice_id,
             input=text,
             speed=speed
-        )
-
-        # 4. บันทึกไฟล์เสียง
-        response.stream_to_file(output_path)
+        ) as response:
+            # 4. บันทึกไฟล์เสียง
+            response.stream_to_file(output_path)
         
         return {
             "voice_used": voice_id,
