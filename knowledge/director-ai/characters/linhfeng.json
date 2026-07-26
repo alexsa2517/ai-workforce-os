@@ -2,19 +2,24 @@
   "character_id": "CHAR_001",
   "name": "หลินเฟิง",
   "english_name": "Lin Feng",
+  "real_name": "หลิน หยาง (Lin Yang)",
+  "stage_name": "หลินเฟิง (Lin Feng)",
 
-  "role": "Main Character",
+  "role": "Main Character / AI Actor",
 
   "story": {
     "title": "ตำนานประตูแห่งชะตากรรม",
     "position": "นักรบผู้ค้นหาความจริงในอดีต",
-    "goal": "ค้นหาความจริงเกี่ยวกับพลังที่ซ่อนอยู่ในตัวเขา"
+    "goal": "ค้นหาความจริงเกี่ยวกับพลังที่ซ่อนอยู่ในตัวเขา",
+    "backstory": "เกิดในหมู่บ้านเมฆาคราม (Blue Cloud Village) ท่ามกลางหุบเขาเมฆาหมอก เป็นทายาทผู้สืบทอดวิชาดาบโบราณของตระกูลหลิน"
   },
 
   "basic_information": {
     "age": 25,
     "gender": "male",
-    "origin": "อาณาจักรโบราณตะวันออก"
+    "origin": "หมู่บ้านเมฆาคราม, อาณาจักรโบราณตะวันออก",
+    "nationality": "Eastern Kingdom",
+    "birth_date": "15th day of the 5th Lunar Month"
   },
 
   "appearance": {
