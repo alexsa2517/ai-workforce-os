@@ -162,3 +162,24 @@ Desktop.ini
 
 # Aider
 .aider*
+
+# Logs
+logs/
+*.log
+
+# Database files
+*.db
+*.sqlite3
+
+# Node modules (frontend)
+node_modules/
+frontend/dist/
+frontend/build/
+
+# Secrets and keys
+*.pem
+*.key
+secrets/
+
+# Docker
+.docker/

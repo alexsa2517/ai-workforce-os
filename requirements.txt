@@ -1,0 +1,23 @@
+# AI Workforce OS - Root Dependencies
+# Install with: pip install -r requirements.txt
+
+fastapi>=0.104.0
+uvicorn>=0.24.0
+python-dotenv>=1.0.0
+openai>=1.0.0
+google-generativeai>=0.3.0
+pydantic>=2.5.0
+requests>=2.31.0
+httpx>=0.25.0
+
+# Database
+sqlalchemy>=2.0.0
+
+# Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+
+# Code Quality
+black>=23.0.0
+flake8>=6.0.0
+isort>=5.12.0

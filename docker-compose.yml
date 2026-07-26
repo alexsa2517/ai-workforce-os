@@ -1,0 +1,76 @@
+# ============================================
+# AI Workforce OS - Docker Compose
+# ============================================
+
+version: "3.9"
+
+services:
+  # Backend API
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ai-workforce-api
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_HOST=0.0.0.0
+      - APP_PORT=8000
+      - APP_DEBUG=false
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - DATABASE_URL=postgresql://user:password@db:5432/ai_workforce
+    env_file:
+      - .env
+    volumes:
+      - ./logs:/app/logs
+      - ./knowledge:/app/knowledge
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - ai-workforce-network
+
+  # Frontend (if applicable)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ai-workforce-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks:
+      - ai-workforce-network
+
+  # Database
+  db:
+    image: postgres:15-alpine
+    container_name: ai-workforce-db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ai_workforce
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d ai_workforce"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - ai-workforce-network
+
+volumes:
+  postgres_data:
+
+networks:
+  ai-workforce-network:
+    driver: bridge
