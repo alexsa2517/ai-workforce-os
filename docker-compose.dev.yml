@@ -1,0 +1,91 @@
+# AI Workforce OS - Development Docker Compose
+# Usage: docker-compose -f docker-compose.dev.yml up
+
+version: '3.9'
+
+services:
+  # Backend API with auto-reload
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ../Dockerfile
+    container_name: ai-workforce-backend-dev
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app/backend
+      - ./backend/ai_workforce.db:/app/ai_workforce.db
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+    env_file:
+      - .env
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      - redis
+    networks:
+      - ai-workforce-dev
+    restart: unless-stopped
+
+  # Frontend dev server
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: ai-workforce-frontend-dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    command: npm run dev -- --host 0.0.0.0
+    depends_on:
+      - backend
+    networks:
+      - ai-workforce-dev
+    restart: unless-stopped
+
+  # Redis for caching
+  redis:
+    image: redis:7-alpine
+    container_name: ai-workforce-redis-dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - ai-workforce-dev
+    restart: unless-stopped
+
+  # PostgreSQL for production-ready database (optional)
+  postgres:
+    image: postgres:16-alpine
+    container_name: ai-workforce-postgres-dev
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ai_workforce
+      POSTGRES_USER: ai_workforce
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme123}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ai-workforce-dev
+    restart: unless-stopped
+    profiles:
+      - postgres
+
+volumes:
+  redis_data:
+  postgres_data:
+
+networks:
+  ai-workforce-dev:
+    driver: bridge
