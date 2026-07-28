@@ -1,10 +1,11 @@
 """
 LipSyncService — ระบบแปลง เสียง + ภาพตัวละคร → วิดีโอปากขยับ
 
-รองรับ 3 วิธี:
+รองรับ 4 วิธี:
   1. Hedra API (แนะนำ — ใช้ได้ทันที แค่ใส่ API Key)
   2. D-ID API (ทางเลือก)
-  3. Simulated (สำหรับทดสอบโดยไม่ต้องใช้ API ภายนอก)
+  3. Gemini (ฟรี — ใช้ Google Gemini เพื่อวิเคราะห์เสียง)
+  4. Simulated (สำหรับทดสอบโดยไม่ต้องใช้ API ภายนอก)
 """
 
 import os
@@ -26,7 +27,7 @@ class LipSyncService:
     def __init__(self, provider: str = "hedra"):
         """
         Args:
-            provider: ชื่อ provider — "hedra", "did", หรือ "simulated"
+            provider: ชื่อ provider — "hedra", "did", "gemini", หรือ "simulated"
         """
         self.provider = provider.lower()
         self._validate_api_key()
@@ -68,6 +69,8 @@ class LipSyncService:
             return self._hedra_generate(image_path, audio_path, output_path, duration_hint)
         elif self.provider == "did":
             return self._did_generate(image_path, audio_path, output_path, duration_hint)
+        elif self.provider == "gemini":
+            return self._gemini_generate(image_path, audio_path, output_path, duration_hint)
         else:
             return self._simulated_generate(image_path, audio_path, output_path, duration_hint)
 
@@ -194,6 +197,37 @@ class LipSyncService:
             return {"status": "error", "message": str(e)}
 
     # ────────────────────────────────────────────────────────────
+    # Gemini Implementation (Free)
+    # ────────────────────────────────────────────────────────────
+    def _gemini_generate(self, image_path, audio_path, output_path, duration_hint):
+        """สร้าง Lip-Sync ผ่าน Gemini (ฟรี)"""
+        api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            return {
+                "status": "error",
+                "message": "GOOGLE_API_KEY or GEMINI_API_KEY not set. Set it in .env to use Gemini lip-sync.",
+                "fallback": "use simulated provider for testing",
+            }
+
+        try:
+            from app.services.lip_sync.gemini_lip_sync import GeminiLipSyncProvider
+            provider = GeminiLipSyncProvider()
+            result = provider.generate_lip_sync(
+                image_path=image_path,
+                audio_path=audio_path,
+                output_path=output_path,
+                duration_hint=duration_hint,
+            )
+            return result
+        except ImportError:
+            return {
+                "status": "error",
+                "message": "google-generativeai not installed. Install with: pip install google-generativeai",
+            }
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
+    # ────────────────────────────────────────────────────────────
     # Simulated (for testing without external API)
     # ────────────────────────────────────────────────────────────
     def _simulated_generate(self, image_path, audio_path, output_path, duration_hint):
@@ -231,7 +265,7 @@ class LipSyncService:
                 "output_path": str(output_path),
                 "provider": "simulated",
                 "note": "This is a simulated lip-sync (image + audio merged). "
-                        "Set HEDRA_API_KEY or DID_API_KEY for real lip-sync.",
+                        "Set HEDRA_API_KEY, DID_API_KEY, or GOOGLE_API_KEY for real lip-sync.",
             }
         except FileNotFoundError:
             return {
@@ -252,6 +286,10 @@ class LipSyncService:
                 pass  # จะแจ้ง error เมื่อเรียกใช้จริง
         elif self.provider == "did":
             key = os.getenv("DID_API_KEY", "")
+            if not key:
+                pass
+        elif self.provider == "gemini":
+            key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
             if not key:
                 pass
 
