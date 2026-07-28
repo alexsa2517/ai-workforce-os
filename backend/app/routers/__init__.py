@@ -1,3 +1,3 @@
 """
-Routers package - API route definitions
+Routers package - API endpoint modules.
 """

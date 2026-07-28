@@ -1,119 +1,178 @@
+"""
+Prompt Engine - Generates structured prompts for cinematic AI generation
+Creates scene prompts, character descriptions, world descriptions,
+and emotion-based prompts for image and video generation.
+"""
+import logging
+from typing import Any, Dict, Optional
+
+logger = logging.getLogger("ai_workforce.agents.prompt_engine")
+
+
 class PromptEngine:
+    """Engine for generating structured cinematic prompts."""
+
+    def __init__(self):
+        self.default_style = "cinematic, photorealistic, 4K quality"
 
     def create_scene_prompt(
         self,
-        character,
-        world,
-        scene
-    ):
+        character: Dict[str, Any],
+        world: Dict[str, Any],
+        scene: Dict[str, Any],
+    ) -> str:
+        """
+        Create a detailed scene prompt for image/video generation.
 
-        prompt = f"""
-Cinematic fantasy movie scene.
+        Args:
+            character: Character data from knowledge base
+            world: World data from knowledge base
+            scene: Scene data from episode
 
-Character:
-{character['name']}
+        Returns:
+            Detailed scene prompt string
+        """
+        char_name = character.get("name", "Unknown")
+        char_english = character.get("english_name", char_name)
+        appearance = character.get("appearance", {})
+        face = appearance.get("face", {}).get("description", "")
+        hair = appearance.get("hair", {})
+        hair_desc = f"{hair.get('color', 'black')} {hair.get('style', 'hair')}"
+        costume = character.get("costume", {}).get("main_outfit", "traditional outfit")
 
-Appearance:
-{character['appearance']['face']['description']}
+        world_name = world.get("name", "Unknown world")
+        locations = world.get("locations", [])
+        location = scene.get("location", locations[0]["name"] if locations else "unknown")
 
-    Eyes:
-Color: {character['appearance']['eyes']['color']}
-Expression: {character['appearance']['eyes']['expression']}
-Blink Behavior: {character['appearance']['eyes']['blink_rate']}
-Gaze Dynamics: {character['appearance']['eyes']['gaze_style']}
-Eye Contact: {character['appearance']['eyes']['eye_contact']}
-Micro-Movements: {character['appearance']['eyes']['micro_movements']}
-Detail: {character['appearance']['eyes']['detail']}
+        scene_title = scene.get("title", "")
+        action = scene.get("action", "")
+        emotion = scene.get("emotion", "neutral")
+        time_of_day = scene.get("time", "")
 
-    Facial Dynamics:
-Micro-expressions: {', '.join(character['appearance']['facial_dynamics']['micro_expressions'])}
-Blinking Style: {character['appearance']['facial_dynamics']['blinking_behavior']}
-Skin & Texture: {character['appearance']['facial_dynamics']['skin_texture']}
-Natural Idle Movements: {character['appearance']['facial_dynamics']['natural_movements']}
+        prompt = (
+            f"Cinematic scene: {char_name} ({char_english}) in {world_name}. "
+            f"Location: {location}. "
+            f"Character appearance: {face}, hair: {hair_desc}, wearing {costume}. "
+            f"Action: {action}. "
+            f"Emotion: {emotion}. "
+            f"Time: {time_of_day}. "
+            f"Style: {self.default_style}. "
+            f"Lighting: natural, dramatic shadows. "
+            f"Camera: medium shot, slight angle."
+        )
+        return prompt
 
-    Speech & Lip-Sync:
-Lip-Sync Precision: {character['appearance']['facial_dynamics']['speech_dynamics']['lip_sync_precision']}
-Thai Phonetic Articulation:
-- Vowels: {character['appearance']['facial_dynamics']['speech_dynamics']['thai_articulation']['vowels']}
-- Consonants: {character['appearance']['facial_dynamics']['speech_dynamics']['thai_articulation']['consonants']}
-- Tonal Influence: {character['appearance']['facial_dynamics']['speech_dynamics']['thai_articulation']['tone_influence']}
-Jaw & Tongue: {character['appearance']['facial_dynamics']['speech_dynamics']['jaw_movement']}, {character['appearance']['facial_dynamics']['speech_dynamics']['tongue_visibility']}
-Emotional Integration & Subtext:
-- Primary Emotion: {scene['emotion']}
-- Complex Expression: {character['appearance']['facial_dynamics']['speech_dynamics']['emotional_sync']['layered_emotions'].get(scene.get('complex_emotion', '').lower(), 'Adapt naturally to show the character\'s inner state.')}
-- Subtext Articulation: Ensure the facial muscles and lip-sync reflect the conflict between the spoken dialogue and the character's true feelings. Use micro-expressions like asymmetric mouth tension and eye micro-movements to convey hidden depth.
-Facial Muscle Sync: {character['appearance']['facial_dynamics']['speech_dynamics']['secondary_motion']}
-Instructions: Ensure every Thai syllable is perfectly synced with realistic mouth shapes, emphasizing the emotional weight of the Thai dialogue.
+    def create_character_prompt(self, character: Dict[str, Any], emotion: str = "neutral") -> str:
+        """
+        Create a character portrait prompt.
 
-Hair:
-{character['appearance']['hair']['style']}
+        Args:
+            character: Character data
+            emotion: Target emotion for the portrait
 
-Clothing:
-{character['costume']['main_outfit']}
+        Returns:
+            Character portrait prompt
+        """
+        char_name = character.get("name", "Unknown")
+        char_english = character.get("english_name", char_name)
+        appearance = character.get("appearance", {})
+        face = appearance.get("face", {}).get("description", "")
+        hair = appearance.get("hair", {})
+        hair_desc = f"{hair.get('color', 'black')} {hair.get('style', 'hair')}"
+        costume = character.get("costume", {}).get("main_outfit", "traditional outfit")
+        gender = character.get("basic_information", {}).get("gender", "male")
 
-    Body & Posture:
-Posture: {character['appearance']['body']['posture']['base_stance']}
-Idle Behavior: {character['appearance']['body']['posture']['idle_behavior']}
-Shoulder Movement: {character['appearance']['body']['posture']['shoulder_dynamics']}
+        prompt = (
+            f"Cinematic portrait of a {gender}, "
+            f"name: {char_name} ({char_english}). "
+            f"Face: {face}. Hair: {hair_desc}. "
+            f"Wearing: {costume}. "
+            f"Emotion: {emotion}. "
+            f"Style: {self.default_style}. "
+            f"Lighting: soft, cinematic, Rembrandt lighting. "
+            f"Background: subtle gradient, out of focus."
+        )
+        return prompt
 
-    Hand & Arm Gestures:
-Gesture Style: {character['appearance']['body']['hand_gestures']['style']}
-Finger Detail: {character['appearance']['body']['hand_gestures']['finger_detail']}
-Speech-Driven Gestures: {character['appearance']['body']['hand_gestures']['speech_gestures']}
-Movement Transitions: {character['appearance']['body']['hand_gestures']['interaction']}
+    def create_world_prompt(self, world: Dict[str, Any]) -> str:
+        """
+        Create a world/environment prompt.
 
-    Environmental Interaction:
-Lighting Response: {character['appearance']['body']['environmental_interaction']['lighting_response']}
-Weather Response: {character['appearance']['body']['environmental_interaction']['weather_response']}
-Physics & Terrain: {character['appearance']['body']['environmental_interaction']['physics_interaction']}
-Spatial Awareness: {character['appearance']['body']['environmental_interaction']['spatial_awareness']}
-Integration: Ensure the character feels grounded in the world, reacting to the lighting, atmosphere, and physical elements of the scene.
+        Args:
+            world: World data
 
+        Returns:
+            World environment prompt
+        """
+        name = world.get("name", "Unknown world")
+        era = world.get("era", "Unknown era")
+        description = world.get("description", "")
+        locations = world.get("locations", [])
+        location_desc = ", ".join(
+            [loc.get("name", "") for loc in locations]
+        ) if locations else ""
 
-World:
-{world['description']}
+        prompt = (
+            f"World environment: {name}. "
+            f"Era: {era}. "
+            f"Description: {description}. "
+            f"Key locations: {location_desc}. "
+            f"Style: {self.default_style}. "
+            f"Atmosphere: immersive, detailed, atmospheric lighting."
+        )
+        return prompt
 
+    def create_emotion_prompt(self, emotion: str, intensity: str = "moderate") -> str:
+        """
+        Create an emotion-specific prompt modifier.
 
-Scene:
-{scene['title']}
+        Args:
+            emotion: Target emotion
+            intensity: Intensity level (subtle, moderate, intense)
 
-Action:
-{scene['action']}
+        Returns:
+            Emotion prompt modifier string
+        """
+        emotion_map = {
+            "happy": "warm smile, bright eyes, relaxed posture",
+            "sad": "downcast eyes, slight frown, subdued expression",
+            "angry": "furrowed brows, clenched jaw, intense gaze",
+            "fearful": "wide eyes, tense expression, slight recoil",
+            "surprised": "raised eyebrows, slightly open mouth",
+            "neutral": "calm expression, steady gaze, composed",
+            "confused": "slightly furrowed brows, tilted head, uncertain expression",
+            "determined": "firm jaw, focused eyes, strong posture",
+        }
+        facial_expr = emotion_map.get(emotion, "neutral expression")
 
+        intensity_map = {
+            "subtle": "subtle",
+            "moderate": "moderate",
+            "intense": "intense",
+        }
+        level = intensity_map.get(intensity, "moderate")
 
-Emotion:
-{scene['emotion']}
+        return f"Facial expression: {level} {facial_expr}, {level} body language matching {emotion} emotion"
 
+    def create_dialogue_prompt(self, character: Dict[str, Any], dialogue: str) -> str:
+        """
+        Create a prompt for lip-sync generation with dialogue.
 
-Camera & Cinematography:
-- Movement Style: Cinematic camera movement with natural handheld shake if intense, or smooth tracking if calm.
-- Shot Type: Dynamic framing based on {scene['emotion']}, utilizing Rule of Thirds and Leading Lines.
-- Lens & Focus: Shallow depth of field, 35mm cinematic lens, realistic rack focus on {character['name']}'s eyes during dialogue.
-- Angles: Use Dutch tilts for tension, low angles for power, and close-ups for emotional depth.
-- Lighting Integration: Dramatic lighting that interacts with the environment and character's micro-movements.
+        Args:
+            character: Character data
+            dialogue: The dialogue text
 
+        Returns:
+            Dialogue prompt with character context
+        """
+        char_name = character.get("name", "Unknown")
+        voice_data = character.get("voice", {})
+        voice_desc = voice_data.get("description", "natural speaking voice")
 
-Dialogue:
-Thai language,
-natural Thai voice.
-
-Audio/Speech Instructions:
-Voice Profile: {character['voice']['archetype']} ({character['voice']['gender']})
-Estimated Age: {character['voice']['age_years']} years old
-Tone & Resonance: {character['voice']['tone']}, {character['voice']['advanced_settings']['resonance']}
-Vocal Texture: {character['voice']['advanced_settings']['vocal_texture']}
-Pitch: {character['voice']['pitch']}
-Speed: {character['voice']['speed']}
-Vocal Traits: {', '.join(character['voice']['vocal_traits'])}
-Breathing Pattern: {character['voice']['advanced_settings']['breathing_pattern']}
-Intonation & Prosody: {character['voice']['advanced_settings']['intonation_style']}
-Speech Style: Advanced Thai articulation with emotional depth corresponding to {scene['emotion']}. Ensure realistic Thai tonal accuracy and natural flow.
-
-
-Style:
-Realistic fantasy film,
-4K,
-cinematic quality.
-"""
-
+        prompt = (
+            f"Character: {char_name}. "
+            f"Voice: {voice_desc}. "
+            f"Dialogue: \'{dialogue}\' "
+            f"Speak naturally with appropriate emotional inflection."
+        )
         return prompt

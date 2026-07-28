@@ -1,24 +1,21 @@
 """
 JWT Utilities - Token generation, validation, and decoding
-
 Provides JWT-based authentication for the AI Workforce OS API.
 """
-
 import logging
+import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-
 import jwt
 from pydantic import BaseModel, Field
-
 from app.core.config import settings
 
 logger = logging.getLogger("ai_workforce.auth")
 
-# Default JWT secret (should be overridden in production via .env)
-JWT_SECRET = getattr(settings, "JWT_SECRET", "ai-workforce-os-dev-secret-change-in-production")
-JWT_ALGORITHM = "HS256"
-JWT_EXPIRATION_HOURS = 24
+# JWT configuration from settings
+JWT_SECRET = settings.JWT_SECRET or os.getenv("JWT_SECRET", "ai-workforce-os-dev-secret-change-in-production")
+JWT_ALGORITHM = settings.JWT_ALGORITHM
+JWT_EXPIRATION_HOURS = settings.JWT_EXPIRATION_HOURS
 
 
 class TokenPayload(BaseModel):
@@ -51,7 +48,9 @@ def create_access_token(
         Encoded JWT token string
     """
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(hours=JWT_EXPIRATION_HOURS))
+    expire = datetime.now(timezone.utc) + (
+        expires_delta or timedelta(hours=JWT_EXPIRATION_HOURS)
+    )
     to_encode.update({
         "exp": expire,
         "iat": datetime.now(timezone.utc),

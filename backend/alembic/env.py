@@ -1,32 +1,27 @@
 """
-Alembic environment configuration for AI Workforce OS
+Alembic Environment Configuration
+Configures Alembic to use the same Base as the application.
 """
-
 from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
-
-import sys
 import os
+import sys
 
-# Add backend to path
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+# Add the backend directory to the path so we can import app modules
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from app.core.config import settings
 from database.session import Base
-from database.models import AIAgent, AITask, ChatSession, ChatMessage  # noqa: F401
+from database.models import *  # noqa: ensure all models are imported
 
 # Alembic Config object
 config = context.config
-
-# Set database URL from settings
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
 # Interpret the config file for Python logging
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Model's MetaData object for autogenerate
+# Set target metadata for autogenerate support
 target_metadata = Base.metadata
 
 
@@ -39,7 +34,6 @@ def run_migrations_offline() -> None:
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
     )
-
     with context.begin_transaction():
         context.run_migrations()
 
@@ -51,13 +45,10 @@ def run_migrations_online() -> None:
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
-
     with connectable.connect() as connection:
         context.configure(
-            connection=connection,
-            target_metadata=target_metadata,
+            connection=connection, target_metadata=target_metadata
         )
-
         with context.begin_transaction():
             context.run_migrations()
 

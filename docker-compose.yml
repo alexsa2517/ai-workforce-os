@@ -1,39 +1,37 @@
-# ============================================
-# AI Workforce OS - Docker Compose
-# ============================================
-
-version: "3.9"
+version: '3.8'
 
 services:
-  # Backend API
-  api:
+  backend:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: ai-workforce-api
+    container_name: ai-workforce-backend
     ports:
       - "8000:8000"
     environment:
-      - APP_HOST=0.0.0.0
-      - APP_PORT=8000
-      - APP_DEBUG=false
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
-      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
-      - DATABASE_URL=postgresql://user:password@db:5432/ai_workforce
-    env_file:
-      - .env
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - DEEPGRAM_API_KEY=${DEEPGRAM_API_KEY:-}
+      - JWT_SECRET=${JWT_SECRET:-dev-secret-change-in-production}
+      - DATABASE_URL=${DATABASE_URL:-sqlite:///./data/ai_workforce.db}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - APP_DEBUG=${APP_DEBUG:-false}
     volumes:
+      - ./data:/app/data
+      - ./movies:/app/movies
       - ./logs:/app/logs
       - ./knowledge:/app/knowledge
-    depends_on:
-      db:
-        condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/api/v1/health/').raise_for_status()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     networks:
-      - ai-workforce-network
+      - ai-workforce
 
-  # Frontend (if applicable)
   frontend:
     build:
       context: ./frontend
@@ -41,36 +39,46 @@ services:
     container_name: ai-workforce-frontend
     ports:
       - "3000:3000"
-    depends_on:
-      - api
-    restart: unless-stopped
-    networks:
-      - ai-workforce-network
-
-  # Database
-  db:
-    image: postgres:15-alpine
-    container_name: ai-workforce-db
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: ai_workforce
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d ai_workforce"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - VITE_API_URL=http://backend:8000/api/v1
+    depends_on:
+      backend:
+        condition: service_healthy
     restart: unless-stopped
     networks:
-      - ai-workforce-network
+      - ai-workforce
 
-volumes:
-  postgres_data:
+  # Optional: PostgreSQL database (uncomment to use instead of SQLite)
+  # db:
+  #   image: postgres:16
+  #   container_name: ai-workforce-db
+  #   environment:
+  #     POSTGRES_DB: ai_workforce
+  #     POSTGRES_USER: ai_workforce
+  #     POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+  #   volumes:
+  #     - pg_data:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+  #   restart: unless-stopped
+  #   networks:
+  #     - ai-workforce
+
+  # Optional: Prometheus monitoring
+  # prometheus:
+  #   image: prom/prometheus:latest
+  #   container_name: ai-workforce-prometheus
+  #   volumes:
+  #     - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+  #   ports:
+  #     - "9090:9090"
+  #   restart: unless-stopped
+  #   networks:
+  #     - ai-workforce
 
 networks:
-  ai-workforce-network:
+  ai-workforce:
     driver: bridge
+
+# volumes:
+#   pg_data:

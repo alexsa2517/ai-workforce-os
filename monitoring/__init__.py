@@ -1,1 +1,3 @@
-"""Monitoring package for AI Workforce OS"""
+"""
+Monitoring package - Metrics collection and health monitoring.
+"""

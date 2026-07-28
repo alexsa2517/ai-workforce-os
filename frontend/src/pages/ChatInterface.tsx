@@ -1,125 +1,170 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import api from '../services/api';
 import { ChatMessage } from '../types';
 
 export default function ChatInterface() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [provider, setProvider] = useState('openai');
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState('openai');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const sendMessage = async () => {
-    if (!input.trim() || loading) return;
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
-    const userMsg: ChatMessage = {
+  const handleSend = async () => {
+    if (!input.trim() || isLoading) return;
+
+    const userMessage: ChatMessage = {
       role: 'user',
-      content: input,
+      content: input.trim(),
       timestamp: new Date().toISOString(),
     };
-    setMessages((prev) => [...prev, userMsg]);
+    setMessages((prev) => [...prev, userMessage]);
     setInput('');
-    setLoading(true);
+    setIsLoading(true);
 
     try {
-      const response = await api.chat(input, provider);
-      const assistantMsg: ChatMessage = {
+      const response = await api.chat(input.trim(), selectedProvider);
+      const assistantMessage: ChatMessage = {
         role: 'assistant',
         content: response.response,
         timestamp: response.timestamp,
       };
-      setMessages((prev) => [...prev, assistantMsg]);
+      setMessages((prev) => [...prev, assistantMessage]);
     } catch (err: any) {
-      const errorMsg: ChatMessage = {
+      const errorMessage: ChatMessage = {
         role: 'assistant',
         content: `Error: ${err.message}`,
         timestamp: new Date().toISOString(),
       };
-      setMessages((prev) => [...prev, errorMsg]);
+      setMessages((prev) => [...prev, errorMessage]);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  const providers = [
+    { id: 'openai', name: 'OpenAI' },
+    { id: 'gemini', name: 'Gemini' },
+    { id: 'deepseek', name: 'DeepSeek' },
+  ];
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 140px)' }}>
-      <h2 style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: '1rem' }}>Chat</h2>
+    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 180px)' }}>
+      <h2 style={titleStyle}>Chat Interface</h2>
 
       {/* Provider Selection */}
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-        {['openai', 'gemini', 'deepseek'].map((p) => (
+        {providers.map((p) => (
           <button
-            key={p}
-            onClick={() => setProvider(p)}
+            key={p.id}
+            onClick={() => setSelectedProvider(p.id)}
             style={{
-              padding: '0.5rem 1rem',
+              padding: '0.375rem 0.75rem',
               borderRadius: '6px',
-              border: '1px solid',
-              borderColor: provider === p ? '#3b82f6' : '#334155',
-              background: provider === p ? '#1e3a5f' : '#1e293b',
-              color: provider === p ? '#60a5fa' : '#94a3b8',
+              border: selectedProvider === p.id ? '1px solid #3b82f6' : '1px solid #334155',
+              background: selectedProvider === p.id ? '#3b82f620' : 'transparent',
+              color: selectedProvider === p.id ? '#3b82f6' : '#94a3b8',
               cursor: 'pointer',
-              fontSize: '0.875rem',
+              fontSize: '0.8rem',
+              fontWeight: 500,
             }}
           >
-            {p}
+            {p.name}
           </button>
         ))}
       </div>
 
       {/* Messages */}
-      <div style={{ flex: 1, overflow: 'auto', background: '#1e293b', borderRadius: '12px', padding: '1.5rem', marginBottom: '1rem' }}>
+      <div style={{
+        flex: 1,
+        overflowY: 'auto',
+        padding: '1rem',
+        background: '#1e293b',
+        borderRadius: '12px',
+        marginBottom: '1rem',
+      }}>
         {messages.length === 0 && (
-          <p style={{ color: '#64748b', textAlign: 'center', marginTop: '2rem' }}>Send a message to start chatting</p>
+          <p style={{ color: '#64748b', textAlign: 'center', marginTop: '2rem' }}>
+            Start a conversation with an AI provider...
+          </p>
         )}
         {messages.map((msg, i) => (
-          <div key={i} style={{ marginBottom: '1rem', display: 'flex', flexDirection: msg.role === 'user' ? 'row-reverse' : 'row' }}>
-            <div
-              style={{
-                maxWidth: '75%',
-                padding: '0.75rem 1rem',
-                borderRadius: '12px',
-                background: msg.role === 'user' ? '#3b82f6' : '#334155',
-                color: '#fff',
-              }}
-            >
-              <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.25rem' }}>{msg.role === 'user' ? 'You' : 'AI'}</div>
-              <div>{msg.content}</div>
+          <div
+            key={i}
+            style={{
+              marginBottom: '1rem',
+              display: 'flex',
+              justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
+            }}
+          >
+            <div style={{
+              maxWidth: '75%',
+              padding: '0.75rem 1rem',
+              borderRadius: '12px',
+              background: msg.role === 'user' ? '#3b82f6' : '#334155',
+              color: '#fff',
+              fontSize: '0.9rem',
+              lineHeight: 1.5,
+            }}>
+              <div style={{ fontSize: '0.7rem', opacity: 0.7, marginBottom: '0.25rem' }}>
+                {msg.role === 'user' ? 'You' : selectedProvider}
+              </div>
+              {msg.content}
             </div>
           </div>
         ))}
-        {loading && <p style={{ color: '#60a5fa' }}>AI is thinking...</p>}
+        {isLoading && (
+          <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+            <div style={{ padding: '0.75rem 1rem', borderRadius: '12px', background: '#334155' }}>
+              <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Thinking...</span>
+            </div>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Input */}
       <div style={{ display: 'flex', gap: '0.5rem' }}>
-        <input
+        <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-          placeholder="Type your message..."
+          onKeyDown={handleKeyDown}
+          placeholder="Type a message..."
+          rows={3}
           style={{
             flex: 1,
             padding: '0.75rem 1rem',
             borderRadius: '8px',
             border: '1px solid #334155',
-            background: '#0f172a',
+            background: '#1e293b',
             color: '#e2e8f0',
-            fontSize: '0.875rem',
+            fontSize: '0.9rem',
+            resize: 'none',
             outline: 'none',
           }}
         />
         <button
-          onClick={sendMessage}
-          disabled={loading || !input.trim()}
+          onClick={handleSend}
+          disabled={isLoading || !input.trim()}
           style={{
             padding: '0.75rem 1.5rem',
             borderRadius: '8px',
             border: 'none',
-            background: '#3b82f6',
-            color: '#fff',
-            cursor: 'pointer',
+            background: (isLoading || !input.trim()) ? '#334155' : '#3b82f6',
+            color: (isLoading || !input.trim()) ? '#64748b' : '#fff',
+            cursor: (isLoading || !input.trim()) ? 'not-allowed' : 'pointer',
             fontWeight: 600,
-            opacity: loading || !input.trim() ? 0.5 : 1,
+            fontSize: '0.9rem',
           }}
         >
           Send
@@ -128,3 +173,9 @@ export default function ChatInterface() {
     </div>
   );
 }
+
+const titleStyle: React.CSSProperties = {
+  fontSize: '1.75rem',
+  fontWeight: 700,
+  marginBottom: '1rem',
+};

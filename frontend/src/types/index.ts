@@ -12,7 +12,7 @@ export interface AgentInfo {
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
-  timestamp: string;
+  timestamp?: string;
 }
 
 export interface ChatResponse {
@@ -37,4 +37,38 @@ export interface TaskInfo {
   description: string;
   priority: number;
   status: string;
+}
+
+export interface LLMProvider {
+  id: string;
+  name: string;
+  models: string[];
+}
+
+export interface CharacterInfo {
+  name: string;
+  role: string;
+  appearance: Record<string, any>;
+  voice: Record<string, any>;
+  costume: Record<string, any>;
+}
+
+export interface WorldInfo {
+  name: string;
+  description: string;
+  atmosphere?: string;
+  time_period?: string;
+}
+
+export interface EpisodeInfo {
+  title: string;
+  scenes: any[];
+  summary?: string;
+}
+
+export interface PipelineStatus {
+  status: string;
+  movies_dir: string;
+  scenes_per_episode: number;
+  max_parallel_jobs: number;
 }

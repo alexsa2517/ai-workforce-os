@@ -1,3 +1,3 @@
 """
-Authentication package - JWT authentication and authorization
+Authentication package - JWT-based authentication utilities.
 """

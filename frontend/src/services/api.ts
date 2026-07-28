@@ -1,4 +1,4 @@
-import { HealthStatus, AgentInfo, ChatResponse } from '../types';
+import { HealthStatus, AgentInfo, ChatResponse, ChatMessage } from '../types';
 
 const API_BASE = '/api/v1';
 
@@ -8,27 +8,68 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     ...options,
   });
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || error.error || 'Request failed');
+    let errorMsg = 'Request failed';
+    try {
+      const error = await response.json();
+      errorMsg = error.detail || error.error || errorMsg;
+    } catch {
+      errorMsg = `HTTP ${response.status}: ${response.statusText}`;
+    }
+    throw new Error(errorMsg);
   }
   return response.json();
 }
 
 export const api = {
-  health: (): Promise<HealthStatus> => request('/health/'),
+  // Health
+  health: (): Promise<HealthStatus> => request<HealthStatus>('/health'),
 
-  agents: (): Promise<AgentInfo[]> => request('/agents/'),
+  // Agents
+  agents: (): Promise<AgentInfo[]> => request<AgentInfo[]>('/agents'),
+  agent: (agentId: string): Promise<AgentInfo> => request<AgentInfo>(`/agents/${agentId}`),
+  createAgent: (data: Partial<AgentInfo>): Promise<AgentInfo> =>
+    request<AgentInfo>('/agents', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 
-  agent: (agentId: string): Promise<AgentInfo> => request(`/agents/${agentId}`),
-
+  // Chat
   chat: (message: string, provider: string = 'openai'): Promise<ChatResponse> =>
-    request('/chat/', {
+    request<ChatResponse>('/chat', {
       method: 'POST',
       body: JSON.stringify({ message, provider }),
     }),
 
+  // Voices
   voices: (): Promise<{ voices: { name: string; description: string }[] }> =>
-    request('/voice/voices'),
+    request<{ voices: { name: string; description: string }[] }>('/voice/voices'),
+
+  // TTS
+  tts: (text: string, voice?: string): Promise<any> =>
+    request<any>('/voice/tts', {
+      method: 'POST',
+      body: JSON.stringify({ text, voice }),
+    }),
+
+  // Providers
+  providers: (): Promise<{ providers: any[] }> =>
+    request<{ providers: any[] }>('/chat/providers'),
+
+  // Director AI
+  directorScene: (data?: any): Promise<any> =>
+    request<any>('/agents/director/scene', {
+      method: 'POST',
+      body: JSON.stringify(data || {}),
+    }),
+
+  directorCharacters: (): Promise<any[]> =>
+    request<any[]>('/agents/director/characters/linhfeng'),
+
+  directorWorlds: (): Promise<any> =>
+    request<any>('/agents/director/worlds/ancient-world'),
+
+  directorEpisodes: (): Promise<any> =>
+    request<any>('/agents/director/episodes/ep001'),
 };
 
 export default api;

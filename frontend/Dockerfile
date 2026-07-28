@@ -1,16 +1,19 @@
-# ============================================
-# AI Workforce OS - Frontend Dockerfile
-# ============================================
+# Frontend - Multi-stage build
+FROM node:20-slim AS builder
 
-FROM node:20-alpine AS build
 WORKDIR /app
-COPY package*.json ./
+
+# Copy package files first for caching
+COPY package.json ./
 RUN npm install
+
+# Copy source and build
 COPY . .
 RUN npm run build
 
+# Production stage
 FROM nginx:alpine
-COPY --from=build /app/dist /usr/share/nginx/html
+COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 3000
 CMD ["nginx", "-g", "daemon off;"]

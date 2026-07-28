@@ -1,3 +1,3 @@
 """
-Services package - LLM clients, voice services, and media processing
+Services package - Core application services.
 """

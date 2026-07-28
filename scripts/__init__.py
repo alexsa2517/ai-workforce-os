@@ -1,1 +1,3 @@
-"""Utility scripts for AI Workforce OS"""
+"""
+Scripts package - Utility scripts for setup, migration, and deployment.
+"""
