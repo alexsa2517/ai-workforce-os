@@ -15,9 +15,13 @@ class GeminiClient:
 
     def __init__(self):
         api_key = settings.GOOGLE_API_KEY or os.getenv("GOOGLE_API_KEY", "")
-        genai.configure(api_key=api_key)
+        if not api_key:
+            logger.warning("GOOGLE_API_KEY is not set. Gemini API calls will fail.")
+        
+        genai.configure(api_key=api_key or "no-google-api-key-set")
         self.model_name = settings.GEMINI_MODEL
         self.model = genai.GenerativeModel(self.model_name)
+        self._has_api_key = bool(api_key)
 
     def generate(
         self,
@@ -40,23 +44,56 @@ class GeminiClient:
         Returns:
             Dict with 'content' and 'usage' keys
         """
+        if not self._has_api_key:
+            return {
+                "content": "",
+                "usage": {},
+                "error": "api_key_missing",
+                "detail": "GOOGLE_API_KEY is not configured. Please set it in .env or environment variables.",
+            }
+
         try:
             generation_config = {
                 "temperature": temperature,
                 "max_output_tokens": max_tokens,
             }
+            
+            # If a different model is requested, create a temporary model instance
+            current_model = self.model
+            if model and model != self.model_name:
+                current_model = genai.GenerativeModel(model)
+
             if system_prompt:
-                # Gemini doesn't support system role directly; prepend to user message
+                # Gemini support system instructions in the model constructor or prepended
+                # Using prepend for compatibility with simple generation call
                 prompt = f"{system_prompt}\n\n{prompt}"
 
-            response = self.model.generate_content(
+            response = current_model.generate_content(
                 prompt,
                 generation_config=generation_config,
             )
+            
+            if not response.text:
+                return {"content": "", "usage": {}, "error": "empty_response"}
+
             content = response.text
-            # Gemini doesn't provide detailed token usage in the same way
-            usage = {"total_tokens": len(content.split()) * 4}  # rough estimate
+            # Gemini provides token count in usage_metadata if available
+            usage = {}
+            if hasattr(response, 'usage_metadata'):
+                usage = {
+                    "prompt_tokens": response.usage_metadata.prompt_token_count,
+                    "completion_tokens": response.usage_metadata.candidates_token_count,
+                    "total_tokens": response.usage_metadata.total_token_count,
+                }
+            else:
+                usage = {"total_tokens": len(content.split()) * 4}
+                
             return {"content": content, "usage": usage}
         except Exception as e:
             logger.error(f"Gemini error: {e}", exc_info=True)
-            return {"content": f"Error: {str(e)}", "usage": {}, "error": str(e)}
+            return {
+                "content": "",
+                "usage": {},
+                "error": "api_error",
+                "detail": str(e)
+            }

@@ -17,12 +17,20 @@ class OpenAIClient:
     """OpenAI chat completions client with retry and error handling."""
 
     def __init__(self):
+        api_key = settings.OPENAI_API_KEY or os.getenv("OPENAI_API_KEY", "")
+        if not api_key:
+            logger.warning("OPENAI_API_KEY is not set. OpenAI API calls will fail.")
+        
+        # Use placeholder to prevent init error
+        effective_key = api_key or "sk-no-openai-api-key-set"
+        
         self.client = OpenAI(
-            api_key=settings.OPENAI_API_KEY or os.getenv("OPENAI_API_KEY", ""),
+            api_key=effective_key,
             timeout=DEFAULT_TIMEOUT,
             max_retries=DEFAULT_MAX_RETRIES,
         )
         self.model = settings.OPENAI_MODEL
+        self._has_api_key = bool(api_key)
 
     def generate(
         self,
@@ -45,6 +53,14 @@ class OpenAIClient:
         Returns:
             Dict with 'content' and 'usage' keys
         """
+        if not self._has_api_key:
+            return {
+                "content": "",
+                "usage": {},
+                "error": "api_key_missing",
+                "detail": "OPENAI_API_KEY is not configured. Please set it in .env or environment variables.",
+            }
+
         messages = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
@@ -66,10 +82,25 @@ class OpenAIClient:
             return {"content": content, "usage": usage}
         except APITimeoutError as e:
             logger.error(f"OpenAI timeout: {e}")
-            return {"content": "Error: Request timed out", "usage": {}, "error": "timeout"}
+            return {
+                "content": "",
+                "usage": {},
+                "error": "timeout",
+                "detail": "Request to OpenAI API timed out.",
+            }
         except APIError as e:
             logger.error(f"OpenAI API error: {e}")
-            return {"content": f"Error: {str(e)}", "usage": {}, "error": "api_error"}
+            return {
+                "content": "",
+                "usage": {},
+                "error": "api_error",
+                "detail": str(e),
+            }
         except Exception as e:
             logger.error(f"OpenAI unexpected error: {e}", exc_info=True)
-            return {"content": f"Error: {str(e)}", "usage": {}, "error": "unexpected"}
+            return {
+                "content": "",
+                "usage": {},
+                "error": "unexpected",
+                "detail": str(e),
+            }

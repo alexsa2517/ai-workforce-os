@@ -81,13 +81,23 @@ The project integrates with various Large Language Models (LLMs) through a facto
 This project is optimized for AI-assisted development:
 
 - **Aider:** You can use [Aider](https://aider.chat/) to collaborate with LLMs (like DeepSeek or GPT-4o) directly in your terminal to edit and create files.
-- **Environment Setup:** Ensure you have your `DEEPSEEK_API_KEY` or `OPENAI_API_KEY` set in your environment or a `.env` file to enable AI features.
+- **Environment Setup:** Ensure you have your `DEEPSEEK_API_KEY`, `OPENAI_API_KEY`, or `GOOGLE_API_KEY` set in your environment or a `.env` file to enable AI features.
+
+## DeepSeek V4 Migration (July 2026)
+
+As of July 24, 2026, DeepSeek has deprecated the legacy model names `deepseek-chat` and `deepseek-reasoner`. This project has been updated to support the new **DeepSeek V4 API**:
+
+- **Default Model:** `deepseek-v4-flash` (replaces `deepseek-chat`)
+- **Pro Model:** `deepseek-v4-pro` (replaces `deepseek-reasoner`)
+- **Base URL:** `https://api.deepseek.com` (configurable)
+- **Legacy Support:** Automatic mapping of old model names to V4 equivalents.
 
 ## Bug Fixes and Improvements (July 2026)
 
--   **Fixed `knowledge` directory path:** Corrected the directory name from `" director-ai"` to `"director-ai"` to resolve file loading issues for `DirectorAI`.
--   **Corrected LLM service imports:** Adjusted import paths in `backend/app/services/llm/factory.py` to correctly reference `OpenAIClient`, `GeminiClient`, and `DeepSeekClient`.
--   **Updated OpenAI model:** Changed the OpenAI model from `gpt-5.5` (non-existent) to `gpt-4o` in `backend/app/services/llm/openai.py`.
--   **Updated Gemini integration:** Refactored `backend/app/services/llm/gemini.py` to use `google.generativeai` (current standard) and updated the model to `gemini-1.5-pro`.
--   **Cleaned up test files:** Removed `repro_bug.py` and `test_developer.py` (stale/broken) from the `backend` directory.
--   **Updated `requirements.txt`:** Added `google-generativeai` to ensure all necessary dependencies are installed.
+-   **DeepSeek V4 Migration:** Fully updated DeepSeek client to support V4 API and deprecated legacy model names.
+-   **Enhanced Error Handling:** Improved LLM clients (OpenAI, Gemini, DeepSeek) with better API key validation and clear error messages.
+-   **Fixed `knowledge` directory path:** Corrected the directory name from `" director-ai"` to `"director-ai"`.
+-   **Corrected LLM service imports:** Adjusted import paths in `backend/app/services/llm/factory.py`.
+-   **Updated OpenAI model:** Changed the OpenAI model to `gpt-4o`.
+-   **Updated Gemini integration:** Refactored to use `google.generativeai` and updated to `gemini-1.5-pro`.
+-   **Updated `requirements.txt`:** Updated all dependencies to latest stable versions.
