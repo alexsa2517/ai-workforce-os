@@ -48,7 +48,8 @@ class Settings(BaseModel):
     GOOGLE_API_KEY: str = Field(default="", description="Google API key")
     GEMINI_MODEL: str = Field(default="gemini-1.5-pro", description="Gemini model name")
     DEEPSEEK_API_KEY: str = Field(default="", description="DeepSeek API key")
-    DEEPSEEK_MODEL: str = Field(default="deepseek-chat", description="DeepSeek model name")
+    DEEPSEEK_MODEL: str = Field(default="deepseek-v4-flash", description="DeepSeek model name (deepseek-v4-flash or deepseek-v4-pro)")
+    DEEPSEEK_BASE_URL: str = Field(default="https://api.deepseek.com", description="DeepSeek API base URL")
 
     # ============================================
     # JWT Authentication

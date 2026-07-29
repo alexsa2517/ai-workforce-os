@@ -65,7 +65,7 @@ async def list_providers():
             {
                 "id": "deepseek",
                 "name": "DeepSeek",
-                "models": ["deepseek-chat", "deepseek-coder"],
+                "models": ["deepseek-v4-flash", "deepseek-v4-pro"],
             },
         ]
     }
