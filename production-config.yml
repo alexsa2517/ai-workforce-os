@@ -1,0 +1,79 @@
+# AI Workforce OS - Production Configuration
+# Copy this file to production-config.yml and adjust values
+
+application:
+  name: "AI Workforce OS"
+  version: "0.1.0"
+  environment: production
+  debug: false
+
+server:
+  host: "0.0.0.0"
+  port: 8000
+  workers: 4
+  timeout: 120
+
+security:
+  jwt_secret: "CHANGE_ME_IN_PRODUCTION"
+  jwt_algorithm: "HS256"
+  jwt_expiration_hours: 24
+  cors_origins:
+    - "https://your-domain.com"
+  rate_limiting:
+    enabled: true
+    requests_per_minute: 60
+
+database:
+  url: "postgresql://user:password@db-host:5432/ai_workforce"
+  pool_size: 20
+  max_overflow: 10
+  pool_recycle: 3600
+
+redis:
+  enabled: true
+  url: "redis://redis-host:6379/0"
+
+llm:
+  providers:
+    openai:
+      enabled: true
+      model: "gpt-4o"
+      rate_limit: 60
+    gemini:
+      enabled: true
+      model: "gemini-pro"
+      rate_limit: 60
+    deepseek:
+      enabled: true
+      model: "deepseek-chat"
+      rate_limit: 30
+
+monitoring:
+  prometheus:
+    enabled: true
+    port: 9090
+  logging:
+    level: "INFO"
+    file: "/var/log/ai-workforce/ai_workforce.log"
+    rotation: "daily"
+    retention_days: 30
+
+voice:
+  tts_provider: "openai"
+  tts_voice: "alloy"
+  tts_model: "tts-1"
+  background_music: true
+
+director_ai:
+  enabled: true
+  knowledge_base_path: "./knowledge/director-ai"
+  prompt_engine_version: "v1"
+
+docker:
+  image: "ai-workforce-os:latest"
+  registry: "ghcr.io"
+  restart_policy: "always"
+  health_check:
+    interval: 30s
+    timeout: 10s
+    retries: 3
