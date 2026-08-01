@@ -1,0 +1,22 @@
+{
+    "name": "Extra_Male_01",
+    "archetype": "commoner",
+    "gender": "male",
+    "age_years": 30,
+    "description": "ชายหนุ่มทั่วไปในฝูงชน",
+    "visual_dna": {
+        "facial_features": "average build, common features",
+        "eye_detail": "normal eyes, typical blink rate (15-20 blinks/min)",
+        "gaze_style": "casual, observant",
+        "micro_expressions": "subtle, mostly neutral"
+    },
+    "vocal_dna": {
+        "tone": "neutral",
+        "pitch": "medium",
+        "speed": 1.0,
+        "vocal_traits": [
+            "clear speech",
+            "average volume"
+        ]
+    }
+}

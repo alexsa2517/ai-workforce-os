@@ -1,0 +1,24 @@
+{
+    "name": "Kaelith",
+    "archetype": "hero",
+    "gender": "male",
+    "age_years": 30,
+    "description": "สุขุม นิ่งลึก มีเสน่ห์แบบลึกลับ มีแววตาที่ดูเหมือนมีความลับซ่อนอยู่",
+    "visual_dna": {
+        "facial_features": "sharp jawline, high cheekbones, slightly arched eyebrows",
+        "eye_detail": "piercing dark eyes, subtle moisture reflection",
+        "blink_rate": "slow (10-12 blinks/min)",
+        "gaze_style": "steady, direct, occasionally shifts to convey deep thought",
+        "micro_expressions": "subtle tightening around the eyes when serious, slight smirk when amused"
+    },
+    "vocal_dna": {
+        "tone": "deep, calm, authoritative",
+        "pitch": "medium-low",
+        "speed": 0.9,
+        "vocal_traits": [
+            "resonant voice",
+            "clear articulation",
+            "measured pauses"
+        ]
+    }
+}

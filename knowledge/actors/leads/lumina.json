@@ -1,0 +1,24 @@
+{
+    "name": "Lumina",
+    "archetype": "heroine",
+    "gender": "female",
+    "age_years": 25,
+    "description": "ฉลาด เฉลียวฉลาด มีความมั่นใจสูง มีรอยยิ้มที่ดูเจ้าเล่ห์เล็กน้อย",
+    "visual_dna": {
+        "facial_features": "delicate features, expressive eyebrows, sharp nose",
+        "eye_detail": "bright, intelligent eyes, quick darting glances",
+        "blink_rate": "quick, natural (15-18 blinks/min)",
+        "gaze_style": "observant, direct, playful when amused",
+        "micro_expressions": "slight raise of an eyebrow when curious, subtle smile when plotting"
+    },
+    "vocal_dna": {
+        "tone": "clear, confident, melodious",
+        "pitch": "medium-high",
+        "speed": 1.1,
+        "vocal_traits": [
+            "articulate speech",
+            "expressive intonation",
+            "occasional light laughter"
+        ]
+    }
+}

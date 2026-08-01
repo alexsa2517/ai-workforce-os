@@ -1,0 +1,23 @@
+{
+    "name": "Elara",
+    "archetype": "wise_mentor",
+    "gender": "female",
+    "age_years": 60,
+    "description": "ใจดี สุขุม รอบรู้ ให้คำแนะนำที่ดีเสมอ",
+    "visual_dna": {
+        "facial_features": "gentle wrinkles, warm smile, kind eyes",
+        "eye_detail": "calm, knowing gaze, steady blink rate (12-15 blinks/min)",
+        "gaze_style": "empathetic, reassuring",
+        "micro_expressions": "slight nod when listening, soft smile when approving"
+    },
+    "vocal_dna": {
+        "tone": "soft, soothing, wise",
+        "pitch": "medium",
+        "speed": 0.85,
+        "vocal_traits": [
+            "gentle cadence",
+            "clear, articulate speech",
+            "pauses for emphasis"
+        ]
+    }
+}

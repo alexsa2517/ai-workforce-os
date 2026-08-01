@@ -1,0 +1,24 @@
+{
+    "name": "Vorgath",
+    "archetype": "villain",
+    "gender": "male",
+    "age_years": 45,
+    "description": "ดุดัน น่าเกรงขาม แต่มีเหตุผล โครงหน้าชัดเจน",
+    "visual_dna": {
+        "facial_features": "strong, angular jawline, deep-set eyes, prominent brow ridge",
+        "eye_detail": "intense, unblinking gaze, dark pupils",
+        "blink_rate": "very slow (5-8 blinks/min)",
+        "gaze_style": "fixed, intimidating, rarely breaks eye contact",
+        "micro_expressions": "subtle sneer when displeased, furrowed brow when contemplating"
+    },
+    "vocal_dna": {
+        "tone": "deep, gravelly, commanding",
+        "pitch": "low",
+        "speed": 0.8,
+        "vocal_traits": [
+            "slow, deliberate speech",
+            "heavy emphasis on certain words",
+            "ominous undertone"
+        ]
+    }
+}

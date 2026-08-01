@@ -1,0 +1,23 @@
+{
+    "name": "Roric",
+    "archetype": "loyal_companion",
+    "gender": "male",
+    "age_years": 35,
+    "description": "แข็งแกร่ง พึ่งพาได้ ซื่อสัตย์ และมักจะอยู่เคียงข้างพระเอกเสมอ",
+    "visual_dna": {
+        "facial_features": "rugged, weathered face, strong nose, kind smile",
+        "eye_detail": "honest, steadfast gaze, natural blink rate (12-15 blinks/min)",
+        "gaze_style": "attentive, reassuring",
+        "micro_expressions": "slight nod of agreement, furrowed brow when concerned"
+    },
+    "vocal_dna": {
+        "tone": "deep, steady, reassuring",
+        "pitch": "medium-low",
+        "speed": 0.95,
+        "vocal_traits": [
+            "calm delivery",
+            "clear, resonant voice",
+            "supportive tone"
+        ]
+    }
+}
