@@ -67,19 +67,47 @@ class OpenAIClient:
         messages.append({"role": "user", "content": prompt})
 
         try:
+            logger.info(f"OpenAI request: model={model or self.model}, max_tokens={max_tokens}")
             response = self.client.chat.completions.create(
                 model=model or self.model,
                 messages=messages,
                 temperature=temperature,
                 max_tokens=max_tokens,
             )
-            content = response.choices[0].message.content
-            usage = {
-                "prompt_tokens": response.usage.prompt_tokens,
-                "completion_tokens": response.usage.completion_tokens,
-                "total_tokens": response.usage.total_tokens,
-            }
+            
+            # Check for error in response (some proxies return error field instead of raising)
+            if hasattr(response, 'error') and response.error:
+                logger.error(f"OpenAI API returned an error: {response.error}")
+                return {
+                    "content": "",
+                    "usage": {},
+                    "error": "api_error",
+                    "detail": str(response.error),
+                }
+
+            if not response or not hasattr(response, 'choices') or not response.choices:
+                logger.error("OpenAI API returned an empty or invalid response")
+                return {
+                    "content": "",
+                    "usage": {},
+                    "error": "empty_response",
+                    "detail": "OpenAI API returned an empty or invalid response.",
+                }
+
+            choice = response.choices[0]
+            content = choice.message.content if hasattr(choice, 'message') else ""
+            
+            usage = {}
+            if hasattr(response, 'usage') and response.usage:
+                usage = {
+                    "prompt_tokens": getattr(response.usage, 'prompt_tokens', 0),
+                    "completion_tokens": getattr(response.usage, 'completion_tokens', 0),
+                    "total_tokens": getattr(response.usage, 'total_tokens', 0),
+                }
+            
+            logger.info(f"OpenAI response received: {usage.get('total_tokens', '?')} tokens used")
             return {"content": content, "usage": usage}
+            
         except APITimeoutError as e:
             logger.error(f"OpenAI timeout: {e}")
             return {

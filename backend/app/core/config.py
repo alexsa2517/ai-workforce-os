@@ -21,7 +21,7 @@ else:
         load_dotenv(dotenv_path=_backend_env)
 
 
-class Settings(BaseModel):
+class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
     model_config = SettingsConfigDict(

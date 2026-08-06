@@ -18,6 +18,8 @@ class GeminiClient:
         if not api_key:
             logger.warning("GOOGLE_API_KEY is not set. Gemini API calls will fail.")
         
+        # Note: Using legacy google-generativeai for now as per current requirements.txt
+        # If switching to google-genai, this would need a major refactor.
         genai.configure(api_key=api_key or "no-google-api-key-set")
         self.model_name = settings.GEMINI_MODEL
         self.model = genai.GenerativeModel(self.model_name)
@@ -63,32 +65,53 @@ class GeminiClient:
             if model and model != self.model_name:
                 current_model = genai.GenerativeModel(model)
 
+            # Handle system prompt
+            full_prompt = prompt
             if system_prompt:
-                # Gemini support system instructions in the model constructor or prepended
-                # Using prepend for compatibility with simple generation call
-                prompt = f"{system_prompt}\n\n{prompt}"
+                full_prompt = f"{system_prompt}\n\n{prompt}"
 
+            logger.info(f"Gemini request: model={model or self.model_name}")
             response = current_model.generate_content(
-                prompt,
+                full_prompt,
                 generation_config=generation_config,
             )
             
-            if not response.text:
-                return {"content": "", "usage": {}, "error": "empty_response"}
+            # Check for blocked response or empty candidates
+            if not response or not response.candidates:
+                logger.warning("Gemini API returned no candidates (possibly blocked by safety filters)")
+                return {
+                    "content": "",
+                    "usage": {},
+                    "error": "blocked_or_empty",
+                    "detail": "Gemini API returned no candidates. This may be due to safety filters.",
+                }
 
-            content = response.text
+            # Safely access text (can raise ValueError if response is blocked)
+            try:
+                content = response.text
+            except ValueError as ve:
+                logger.error(f"Could not access Gemini response text: {ve}")
+                return {
+                    "content": "",
+                    "usage": {},
+                    "error": "safety_block",
+                    "detail": f"Could not access response text: {str(ve)}",
+                }
+            
             # Gemini provides token count in usage_metadata if available
             usage = {}
-            if hasattr(response, 'usage_metadata'):
+            if hasattr(response, 'usage_metadata') and response.usage_metadata:
                 usage = {
-                    "prompt_tokens": response.usage_metadata.prompt_token_count,
-                    "completion_tokens": response.usage_metadata.candidates_token_count,
-                    "total_tokens": response.usage_metadata.total_token_count,
+                    "prompt_tokens": getattr(response.usage_metadata, 'prompt_token_count', 0),
+                    "completion_tokens": getattr(response.usage_metadata, 'candidates_token_count', 0),
+                    "total_tokens": getattr(response.usage_metadata, 'total_token_count', 0),
                 }
             else:
                 usage = {"total_tokens": len(content.split()) * 4}
                 
+            logger.info(f"Gemini response received: {usage.get('total_tokens', '?')} tokens used")
             return {"content": content, "usage": usage}
+            
         except Exception as e:
             logger.error(f"Gemini error: {e}", exc_info=True)
             return {
