@@ -1,39 +1,15 @@
 """
 LLM Factory - Unified interface for creating LLM clients.
 Supports OpenAI, Gemini, and DeepSeek providers.
-Robust version that handles failed provider imports.
+Dynamic loading version to handle restricted environments.
 """
 import logging
 from typing import Any, Dict, Optional
 
 logger = logging.getLogger("ai_workforce.llm.factory")
 
-# Lazy imports to prevent total crash if one provider fails
-OpenAIClient = None
-GeminiClient = None
-DeepSeekClient = None
-
-try:
-    from .openai import OpenAIClient as _OpenAIClient
-    OpenAIClient = _OpenAIClient
-except Exception as e:
-    logger.error(f"Failed to load OpenAIClient: {e}")
-
-try:
-    from .gemini import GeminiClient as _GeminiClient
-    GeminiClient = _GeminiClient
-except Exception as e:
-    logger.error(f"Failed to load GeminiClient: {e}")
-
-try:
-    from .deepseek import DeepSeekClient as _DeepSeekClient
-    DeepSeekClient = _DeepSeekClient
-except Exception as e:
-    logger.error(f"Failed to load DeepSeekClient: {e}")
-
-
 class LLMFactory:
-    """Factory for creating LLM Client instances."""
+    """Factory for creating LLM Client instances with dynamic loading."""
 
     _instances: Dict[str, Any] = {}
 
@@ -41,32 +17,28 @@ class LLMFactory:
     def get(cls, provider: str):
         """
         Get an LLM client instance for the specified provider.
+        Loads the provider class only when requested.
         """
         provider = provider.lower()
         
-        providers = {
-            "openai": OpenAIClient,
-            "gemini": GeminiClient,
-            "deepseek": DeepSeekClient,
-        }
-        
-        if provider not in providers:
-            raise ValueError(
-                f"Unsupported LLM provider: {provider}. "
-                f"Available: {', '.join(providers.keys())}"
-            )
-            
-        client_class = providers[provider]
-        
-        if client_class is None:
-            raise RuntimeError(
-                f"LLM provider '{provider}' is not available in this environment "
-                f"(failed to load required libraries)."
-            )
-
         if provider not in cls._instances:
-            cls._instances[provider] = client_class()
-            logger.info(f"Created LLM client for provider: {provider}")
+            try:
+                if provider == "openai":
+                    from .openai import OpenAIClient
+                    cls._instances[provider] = OpenAIClient()
+                elif provider == "deepseek":
+                    from .deepseek import DeepSeekClient
+                    cls._instances[provider] = DeepSeekClient()
+                elif provider == "gemini":
+                    from .gemini import GeminiClient
+                    cls._instances[provider] = GeminiClient()
+                else:
+                    raise ValueError(f"Unsupported LLM provider: {provider}")
+                
+                logger.info(f"Successfully created LLM client for: {provider}")
+            except Exception as e:
+                logger.error(f"Failed to load LLM provider '{provider}': {e}")
+                raise RuntimeError(f"LLM provider '{provider}' is not available: {e}")
             
         return cls._instances[provider]
 
