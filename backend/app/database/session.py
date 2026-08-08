@@ -1,88 +1,59 @@
 """
-Database Session - SQLAlchemy connection and session management
-Supports both SQLite (development) and PostgreSQL (production).
+Database Session - Async SQLAlchemy with connection pooling.
+Supports PostgreSQL with asyncpg driver.
 """
 import logging
-import os
-from sqlalchemy import create_engine, event
-from sqlalchemy.orm import DeclarativeBase, sessionmaker, Session
-from typing import Generator
+from sqlalchemy.ext.asyncio import (
+    create_async_engine, AsyncSession, async_sessionmaker, AsyncEngine
+)
+from sqlalchemy.orm import DeclarativeBase
 from app.core.config import settings
 
 logger = logging.getLogger("ai_workforce.database")
 
+# Create async engine
+engine: AsyncEngine = create_async_engine(
+    settings.DATABASE_URL,
+    pool_size=settings.DATABASE_POOL_SIZE,
+    max_overflow=settings.DATABASE_MAX_OVERFLOW,
+    pool_recycle=settings.DATABASE_POOL_RECYCLE,
+    pool_pre_ping=True,  # Verify connections before use
+    echo=settings.APP_DEBUG,
+    future=True,
+)
 
-def _create_engine():
-    """Create SQLAlchemy engine with appropriate settings for the database type."""
-    # Use environment variable if set, otherwise use settings
-    url = os.getenv("DATABASE_URL") or settings.DATABASE_URL
-    is_sqlite = "sqlite" in url.lower()
-
-    connect_args = {}
-    if is_sqlite:
-        # SQLite-specific settings: enable WAL mode for better concurrency
-        connect_args["check_same_thread"] = False
-        engine_kwargs = {}
-    else:
-        # PostgreSQL/MySQL settings
-        engine_kwargs = {
-            "pool_size": settings.DATABASE_POOL_SIZE,
-            "max_overflow": settings.DATABASE_MAX_OVERFLOW,
-            "pool_pre_ping": True,
-        }
-
-    engine = create_engine(
-        url,
-        echo=settings.APP_DEBUG,
-        connect_args=connect_args,
-        **engine_kwargs,
-    )
-
-    if is_sqlite:
-        # Enable WAL mode for better concurrency on SQLite
-        @event.listens_for(engine, "connect")
-        def set_sqlite_pragma(dbapi_connection, connection_record):
-            cursor = dbapi_connection.cursor()
-            cursor.execute("PRAGMA journal_mode=WAL")
-            cursor.execute("PRAGMA foreign_keys=ON")
-            cursor.close()
-
-    return engine
+# Async session factory
+AsyncSessionLocal = async_sessionmaker(
+    engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+    autocommit=False,
+    autoflush=False,
+)
 
 
-# Create engine
-engine = _create_engine()
-
-# Create session factory
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
-# Base class for models - single source of truth
-class Base(DeclarativeBase):
-    """Base class for all database models."""
-    pass
-
-
-def get_db() -> Generator[Session, None, None]:
-    """
-    FastAPI dependency that provides a database session.
-
-    Yields:
-        Database session
-    """
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+async def get_db() -> AsyncSession:
+    """Dependency to get async database session."""
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
 
 
-def init_db():
-    """Create all database tables."""
-    Base.metadata.create_all(bind=engine)
-    logger.info("Database tables created/verified")
+async def init_db() -> None:
+    """Initialize database tables."""
+    from app.database.models import Base
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    logger.info("Database tables initialized")
 
 
-def get_engine():
-    """Get the SQLAlchemy engine instance."""
-    return engine
+async def close_db() -> None:
+    """Close database connections."""
+    await engine.dispose()
+    logger.info("Database connections closed")
