@@ -1,15 +1,14 @@
 """
-Cache Service - In-memory and Redis caching layer
-
+Cache Service - Redis-backed with in-memory fallback
 Provides caching for API responses, LLM outputs, and agent states.
-Falls back to in-memory cache if Redis is not available.
 """
-
 import logging
 import hashlib
 import json
 from typing import Any, Dict, Optional
 from datetime import datetime, timedelta
+import redis.asyncio as redis
+from app.core.config import settings
 
 logger = logging.getLogger("ai_workforce.cache")
 
@@ -23,19 +22,15 @@ class InMemoryCache:
         self._default_ttl = default_ttl
 
     def get(self, key: str) -> Optional[Any]:
-        """Get a cached value by key."""
         entry = self._store.get(key)
         if entry is None:
             return None
         if datetime.now() > entry["expires_at"]:
             del self._store[key]
-            logger.debug(f"Cache expired: {key}")
             return None
-        logger.debug(f"Cache hit: {key}")
         return entry["value"]
 
     def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
-        """Set a cached value with optional TTL."""
         if len(self._store) >= self._max_size:
             self._evict_oldest()
         self._store[key] = {
@@ -43,87 +38,114 @@ class InMemoryCache:
             "created_at": datetime.now(),
             "expires_at": datetime.now() + timedelta(seconds=ttl or self._default_ttl),
         }
-        logger.debug(f"Cache set: {key}")
 
     def delete(self, key: str) -> None:
-        """Delete a cached value."""
         self._store.pop(key, None)
-        logger.debug(f"Cache delete: {key}")
 
     def clear(self) -> None:
-        """Clear all cached values."""
         self._store.clear()
-        logger.info("Cache cleared")
 
     def _evict_oldest(self) -> None:
-        """Evict the oldest entry if cache is full."""
-        if not self._store:
-            return
-        oldest_key = min(self._store, key=lambda k: self._store[k]["created_at"])
-        del self._store[oldest_key]
+        if self._store:
+            oldest = min(self._store, key=lambda k: self._store[k]["created_at"])
+            del self._store[oldest]
 
-    @property
-    def size(self) -> int:
-        """Return current cache size."""
-        return len(self._store)
+
+class RedisCache:
+    """Redis-backed async cache."""
+
+    def __init__(self):
+        self._redis: Optional[redis.Redis] = None
+        self._default_ttl = 3600
+
+    async def connect(self):
+        try:
+            self._redis = redis.from_url(
+                settings.REDIS_URL,
+                max_connections=settings.REDIS_MAX_CONNECTIONS,
+                decode_responses=True,
+            )
+            await self._redis.ping()
+            logger.info("Redis cache connected")
+        except Exception as e:
+            logger.warning(f"Redis connection failed: {e}")
+            self._redis = None
+
+    async def get(self, key: str) -> Optional[Any]:
+        if not self._redis:
+            return None
+        try:
+            value = await self._redis.get(key)
+            if value:
+                return json.loads(value)
+            return None
+        except Exception as e:
+            logger.warning(f"Redis get error: {e}")
+            return None
+
+    async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
+        if not self._redis:
+            return
+        try:
+            await self._redis.setex(
+                key,
+                ttl or self._default_ttl,
+                json.dumps(value, default=str),
+            )
+        except Exception as e:
+            logger.warning(f"Redis set error: {e}")
+
+    async def delete(self, key: str) -> None:
+        if not self._redis:
+            return
+        try:
+            await self._redis.delete(key)
+        except Exception as e:
+            logger.warning(f"Redis delete error: {e}")
+
+    async def close(self):
+        if self._redis:
+            await self._redis.close()
 
 
 class CacheService:
-    """
-    Cache service with in-memory fallback.
-
-    Usage:
-        cache = CacheService()
-        cache.set("key", "value")
-        value = cache.get("key")
-    """
+    """Unified cache service with Redis primary and in-memory fallback."""
 
     def __init__(self):
-        self._memory_cache = InMemoryCache()
-        self._redis = None
+        self._redis = RedisCache()
+        self._memory = InMemoryCache()
+        self._use_redis = False
 
-    def get(self, key: str) -> Optional[Any]:
-        """Get value from cache."""
-        # Try Redis first
-        if self._redis:
-            try:
-                value = self._redis.get(key)
-                if value:
-                    return json.loads(value)
-            except Exception as e:
-                logger.warning(f"Redis get failed: {e}")
+    async def initialize(self):
+        await self._redis.connect()
+        self._use_redis = self._redis._redis is not None
 
-        # Fallback to in-memory
-        return self._memory_cache.get(key)
+    async def get(self, key: str) -> Optional[Any]:
+        if self._use_redis:
+            value = await self._redis.get(key)
+            if value is not None:
+                return value
+        return self._memory.get(key)
 
-    def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
-        """Set value in cache."""
-        # Try Redis first
-        if self._redis:
-            try:
-                serialized = json.dumps(value)
-                self._redis.setex(key, ttl or 3600, serialized)
-                return
-            except Exception as e:
-                logger.warning(f"Redis set failed: {e}")
+    async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
+        if self._use_redis:
+            await self._redis.set(key, value, ttl)
+        self._memory.set(key, value, ttl)
 
-        # Fallback to in-memory
-        self._memory_cache.set(key, value, ttl)
+    async def delete(self, key: str) -> None:
+        if self._use_redis:
+            await self._redis.delete(key)
+        self._memory.delete(key)
 
-    def delete(self, key: str) -> None:
-        """Delete value from cache."""
-        if self._redis:
-            try:
-                self._redis.delete(key)
-            except Exception as e:
-                logger.warning(f"Redis delete failed: {e}")
-        self._memory_cache.delete(key)
+    def generate_key(self, prefix: str, *args) -> str:
+        """Generate deterministic cache key."""
+        content = ":".join(str(a) for a in args)
+        hash_part = hashlib.sha256(content.encode()).hexdigest()[:16]
+        return f"{prefix}:{hash_part}"
 
-    def generate_key(self, *args) -> str:
-        """Generate a cache key from arguments."""
-        raw = "|".join(str(a) for a in args)
-        return hashlib.sha256(raw.encode()).hexdigest()[:16]
+    async def close(self):
+        await self._redis.close()
 
 
-# Global cache instance
+# Global instance
 cache_service = CacheService()
