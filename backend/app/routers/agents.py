@@ -1,192 +1,269 @@
 """
-Agents Router - API endpoints for managing AI agents
+Agents Router - Database-backed AI agent management
 """
 import logging
 from datetime import datetime, timezone
 from typing import List, Optional
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
-from app.core.schemas import AgentInfo, AgentStatus, AgentTask, TaskStatus, SceneRequest, SceneResponse, CharacterInfo, WorldInfo, EpisodeInfo
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, update, func
+
+from app.core.schemas import AgentInfo, AgentCreate, AgentUpdate, TaskInfo, TaskCreate, AgentStatus, TaskStatus
+from app.middleware.error_handler import APIError
+from app.database.session import get_db
+from app.database.models import AIAgent, AITask
+from app.services.monitoring import metrics
 
 logger = logging.getLogger("ai_workforce.routers.agents")
 
 router = APIRouter(prefix="/api/v1/agents", tags=["Agents"])
 
 
-class AgentCreate(BaseModel):
-    """Request schema for creating a new agent."""
-    agent_id: str = Field(..., description="Unique agent identifier")
-    name: str = Field(..., min_length=1, description="Agent display name")
-    role: str = Field(..., description="Agent role")
-    description: Optional[str] = None
-    capabilities: List[str] = Field(default_factory=list)
-    config: Optional[dict] = None
-
-
-class AgentUpdate(BaseModel):
-    """Request schema for updating an agent."""
-    name: Optional[str] = None
-    role: Optional[str] = None
-    description: Optional[str] = None
-    status: Optional[AgentStatus] = None
-    capabilities: Optional[List[str]] = None
-    config: Optional[dict] = None
-
-
-# In-memory agent registry (in production, use database)
-_agent_registry = {
-    "director_ai": AgentInfo(
-        agent_id="director_ai",
-        name="DirectorAI",
-        role="Director AI",
-        status=AgentStatus.ACTIVE,
-        description="AI Director for cinematic scene generation",
-        capabilities=["scene_creation", "character_management", "prompt_engineering"],
-        created_at=datetime.now(timezone.utc),
-        last_active=datetime.now(timezone.utc),
-    ),
-    "sales_ai_001": AgentInfo(
-        agent_id="sales_ai_001",
-        name="Sales AI Employee #001",
-        role="Sales Representative",
-        status=AgentStatus.IDLE,
-        description="AI-powered sales representative for customer interactions",
-        capabilities=["customer_service", "lead_qualification", "sales_pitch"],
-        created_at=datetime.now(timezone.utc),
-        last_active=datetime.now(timezone.utc),
-    ),
-}
-
-
 @router.get("/", response_model=List[AgentInfo])
-async def list_agents():
-    """List all registered AI agents."""
-    return list(_agent_registry.values())
+async def list_agents(
+    db: AsyncSession = Depends(get_db),
+    status: Optional[AgentStatus] = None,
+    skip: int = 0,
+    limit: int = 100,
+):
+    """List all registered AI agents with optional filtering."""
+    query = select(AIAgent).offset(skip).limit(limit)
+
+    if status:
+        query = query.where(AIAgent.status == status.value)
+
+    result = await db.execute(query)
+    agents = result.scalars().all()
+
+    # Update metrics
+    for s in AgentStatus:
+        count = len([a for a in agents if a.status == s.value])
+        metrics.set_agent_count(s.value, count)
+
+    return [
+        AgentInfo(
+            agent_id=a.agent_id,
+            name=a.name,
+            role=a.role,
+            status=AgentStatus(a.status),
+            description=a.description,
+            capabilities=a.capabilities or [],
+            config=a.config,
+            created_at=a.created_at,
+            updated_at=a.updated_at,
+            last_active=a.last_active,
+        )
+        for a in agents
+    ]
 
 
 @router.get("/{agent_id}", response_model=AgentInfo)
-async def get_agent(agent_id: str):
+async def get_agent(agent_id: str, db: AsyncSession = Depends(get_db)):
     """Get details of a specific agent."""
-    agent = _agent_registry.get(agent_id)
+    result = await db.execute(select(AIAgent).where(AIAgent.agent_id == agent_id))
+    agent = result.scalar_one_or_none()
+
     if not agent:
-        raise HTTPException(status_code=404, detail=f"Agent '{agent_id}' not found")
-    return agent
-
-
-@router.post("/", response_model=AgentInfo)
-async def create_agent(agent: AgentCreate):
-    """Register a new AI agent."""
-    if agent.agent_id in _agent_registry:
-        raise HTTPException(
-            status_code=409,
-            detail=f"Agent '{agent.agent_id}' already exists",
+        raise APIError(
+            message=f"Agent '{agent_id}' not found",
+            status_code=404,
+            error_code="agent_not_found",
         )
-    info = AgentInfo(
+
+    return AgentInfo(
+        agent_id=agent.agent_id,
+        name=agent.name,
+        role=agent.role,
+        status=AgentStatus(agent.status),
+        description=agent.description,
+        capabilities=agent.capabilities or [],
+        config=agent.config,
+        created_at=agent.created_at,
+        updated_at=agent.updated_at,
+        last_active=agent.last_active,
+    )
+
+
+@router.post("/", response_model=AgentInfo, status_code=201)
+async def create_agent(agent: AgentCreate, db: AsyncSession = Depends(get_db)):
+    """Register a new AI agent."""
+    # Check if agent_id already exists
+    result = await db.execute(select(AIAgent).where(AIAgent.agent_id == agent.agent_id))
+    if result.scalar_one_or_none():
+        raise APIError(
+            message=f"Agent '{agent.agent_id}' already exists",
+            status_code=409,
+            error_code="agent_exists",
+        )
+
+    new_agent = AIAgent(
         agent_id=agent.agent_id,
         name=agent.name,
         role=agent.role,
         description=agent.description,
+        status=AgentStatus.IDLE.value,
         capabilities=agent.capabilities,
-        created_at=datetime.now(timezone.utc),
+        config=agent.config,
         last_active=datetime.now(timezone.utc),
     )
-    _agent_registry[agent.agent_id] = info
+
+    db.add(new_agent)
+    await db.commit()
+    await db.refresh(new_agent)
+
     logger.info(f"Agent created: {agent.agent_id}")
-    return info
+
+    return AgentInfo(
+        agent_id=new_agent.agent_id,
+        name=new_agent.name,
+        role=new_agent.role,
+        status=AgentStatus(new_agent.status),
+        description=new_agent.description,
+        capabilities=new_agent.capabilities or [],
+        config=new_agent.config,
+        created_at=new_agent.created_at,
+        last_active=new_agent.last_active,
+    )
 
 
-@router.patch("/{agent_id}", response_model=AgentInfo)
-async def update_agent(agent_id: str, update: AgentUpdate):
+@router.put("/{agent_id}", response_model=AgentInfo)
+async def update_agent(agent_id: str, update: AgentUpdate, db: AsyncSession = Depends(get_db)):
     """Update an existing agent."""
-    agent = _agent_registry.get(agent_id)
+    result = await db.execute(select(AIAgent).where(AIAgent.agent_id == agent_id))
+    agent = result.scalar_one_or_none()
+
     if not agent:
-        raise HTTPException(status_code=404, detail=f"Agent '{agent_id}' not found")
+        raise APIError(
+            message=f"Agent '{agent_id}' not found",
+            status_code=404,
+            error_code="agent_not_found",
+        )
 
     update_data = update.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(agent, key, value)
-    agent.last_active = datetime.now(timezone.utc)
+    if "status" in update_data and update_data["status"]:
+        update_data["status"] = update_data["status"].value
+
+    update_data["updated_at"] = datetime.now(timezone.utc)
+
+    await db.execute(
+        update(AIAgent)
+        .where(AIAgent.agent_id == agent_id)
+        .values(**update_data)
+    )
+    await db.commit()
+
+    # Refresh and return
+    result = await db.execute(select(AIAgent).where(AIAgent.agent_id == agent_id))
+    agent = result.scalar_one()
 
     logger.info(f"Agent updated: {agent_id}")
-    return agent
+
+    return AgentInfo(
+        agent_id=agent.agent_id,
+        name=agent.name,
+        role=agent.role,
+        status=AgentStatus(agent.status),
+        description=agent.description,
+        capabilities=agent.capabilities or [],
+        config=agent.config,
+        created_at=agent.created_at,
+        updated_at=agent.updated_at,
+        last_active=agent.last_active,
+    )
 
 
-@router.delete("/{agent_id}")
-async def delete_agent(agent_id: str):
-    """Remove an agent from the registry."""
-    if agent_id not in _agent_registry:
-        raise HTTPException(status_code=404, detail=f"Agent '{agent_id}' not found")
-    del _agent_registry[agent_id]
-    logger.info(f"Agent deleted: {agent_id}")
-    return {"message": f"Agent '{agent_id}' deleted"}
+@router.delete("/{agent_id}", status_code=204)
+async def delete_agent(agent_id: str, db: AsyncSession = Depends(get_db)):
+    """Delete an agent and all associated data."""
+    result = await db.execute(select(AIAgent).where(AIAgent.agent_id == agent_id))
+    agent = result.scalar_one_or_none()
 
-
-@router.post("/{agent_id}/tasks", response_model=AgentTask)
-async def assign_task(agent_id: str, task: AgentTask):
-    """Assign a task to an agent."""
-    if agent_id not in _agent_registry:
-        raise HTTPException(status_code=404, detail=f"Agent '{agent_id}' not found")
-    task.agent_id = agent_id
-    task.status = TaskStatus.PENDING
-    logger.info(f"Task assigned to {agent_id}: {task.task_type}")
-    return task
-
-
-# Director AI specific endpoints
-director_router = APIRouter(prefix="/api/v1/agents/director", tags=["Director AI"])
-
-
-@director_router.post("/scene", response_model=SceneResponse)
-async def create_scene(request: SceneRequest):
-    """Create a cinematic scene using DirectorAI."""
-    try:
-        from app.agents.director_ai.director import DirectorAI
-        director = DirectorAI()
-        result = director.create_scene()
-        return SceneResponse(
-            episode=result.get("episode", ""),
-            scene=result.get("scene", ""),
-            prompt=result.get("prompt", ""),
+    if not agent:
+        raise APIError(
+            message=f"Agent '{agent_id}' not found",
+            status_code=404,
+            error_code="agent_not_found",
         )
-    except FileNotFoundError as e:
-        logger.error(f"Knowledge base file not found: {e}")
-        raise HTTPException(status_code=404, detail="Knowledge base file not found")
-    except Exception as e:
-        logger.error(f"Scene creation error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Scene creation failed: {str(e)}")
+
+    await db.delete(agent)
+    await db.commit()
+
+    logger.info(f"Agent deleted: {agent_id}")
+    return None
 
 
-@director_router.get("/characters/{character_name}", response_model=CharacterInfo)
-async def get_character(character_name: str):
-    """Get character information from knowledge base."""
-    try:
-        from app.agents.director_ai.memory_loader import DirectorMemoryLoader
-        loader = DirectorMemoryLoader()
-        character = loader.load_character(character_name)
-        return CharacterInfo(**character)
-    except Exception as e:
-        raise HTTPException(status_code=404, detail=f"Character '{character_name}' not found")
+# Task endpoints
+@router.get("/{agent_id}/tasks", response_model=List[TaskInfo])
+async def list_agent_tasks(
+    agent_id: str,
+    db: AsyncSession = Depends(get_db),
+    status: Optional[TaskStatus] = None,
+    skip: int = 0,
+    limit: int = 50,
+):
+    """List tasks for a specific agent."""
+    query = select(AITask).where(AITask.agent_id == agent_id).offset(skip).limit(limit)
+
+    if status:
+        query = query.where(AITask.status == status.value)
+
+    result = await db.execute(query.order_by(AITask.created_at.desc()))
+    tasks = result.scalars().all()
+
+    return [
+        TaskInfo(
+            task_id=t.task_id,
+            agent_id=t.agent_id,
+            task_type=t.task_type,
+            description=t.description,
+            priority=t.priority,
+            status=TaskStatus(t.status),
+            parameters=t.parameters,
+            result=t.result,
+            error_message=t.error_message,
+            created_at=t.created_at,
+            started_at=t.started_at,
+            completed_at=t.completed_at,
+        )
+        for t in tasks
+    ]
 
 
-@director_router.get("/worlds/{world_name}", response_model=WorldInfo)
-async def get_world(world_name: str):
-    """Get world information from knowledge base."""
-    try:
-        from app.agents.director_ai.memory_loader import DirectorMemoryLoader
-        loader = DirectorMemoryLoader()
-        world = loader.load_world(world_name)
-        return WorldInfo(**world)
-    except Exception as e:
-        raise HTTPException(status_code=404, detail=f"World '{world_name}' not found")
+@router.post("/{agent_id}/tasks", response_model=TaskInfo, status_code=201)
+async def create_task(agent_id: str, task: TaskCreate, db: AsyncSession = Depends(get_db)):
+    """Create a new task for an agent."""
+    # Verify agent exists
+    result = await db.execute(select(AIAgent).where(AIAgent.agent_id == agent_id))
+    if not result.scalar_one_or_none():
+        raise APIError(
+            message=f"Agent '{agent_id}' not found",
+            status_code=404,
+            error_code="agent_not_found",
+        )
 
+    new_task = AITask(
+        task_id=task.task_id,
+        agent_id=task.agent_id,
+        task_type=task.task_type,
+        description=task.description,
+        priority=task.priority,
+        status=TaskStatus.PENDING.value,
+        parameters=task.parameters,
+    )
 
-@director_router.get("/episodes/{episode_name}", response_model=EpisodeInfo)
-async def get_episode(episode_name: str):
-    """Get episode information from knowledge base."""
-    try:
-        from app.agents.director_ai.memory_loader import DirectorMemoryLoader
-        loader = DirectorMemoryLoader()
-        episode = loader.load_episode(episode_name)
-        return EpisodeInfo(**episode)
-    except Exception as e:
-        raise HTTPException(status_code=404, detail=f"Episode '{episode_name}' not found")
+    db.add(new_task)
+    await db.commit()
+    await db.refresh(new_task)
+
+    logger.info(f"Task created: {task.task_id} for agent {agent_id}")
+
+    return TaskInfo(
+        task_id=new_task.task_id,
+        agent_id=new_task.agent_id,
+        task_type=new_task.task_type,
+        description=new_task.description,
+        priority=new_task.priority,
+        status=TaskStatus(new_task.status),
+        parameters=new_task.parameters,
+        created_at=new_task.created_at,
+    )
