@@ -1,58 +1,53 @@
 """
-DeepSeek LLM Client - Chat completions with error handling and timeout.
-
-Supports DeepSeek V4 models (deepseek-v4-flash, deepseek-v4-pro).
-Note: Legacy model names (deepseek-chat, deepseek-reasoner) were deprecated on 2026-07-24.
-Uses OpenAI-compatible API at https://api.deepseek.com
+DeepSeek Async LLM Client
+Supports DeepSeek V4 models with OpenAI-compatible API.
 """
 import os
 import logging
-from typing import Any, Dict, Optional
-from openai import OpenAI, APITimeoutError, APIError
+from typing import Any, Dict, Optional, AsyncGenerator
+from openai import AsyncOpenAI, APITimeoutError, APIError, AuthenticationError
 from app.core.config import settings
 
 logger = logging.getLogger("ai_workforce.llm.deepseek")
 
-DEFAULT_TIMEOUT = 30.0
-DEFAULT_MAX_RETRIES = 3
-
-# Legacy model name mapping (deprecated 2026-07-24)
+# Legacy model mapping
 LEGACY_MODEL_MAP = {
     "deepseek-chat": "deepseek-v4-flash",
     "deepseek-reasoner": "deepseek-v4-pro",
 }
 
+# Cost per 1K tokens (approximate)
+COST_PER_1K = {
+    "deepseek-v4-flash": {"input": 0.0001, "output": 0.0001},
+    "deepseek-v4-pro": {"input": 0.002, "output": 0.002},
+}
+
 
 class DeepSeekClient:
-    """DeepSeek chat completions client via OpenAI-compatible API."""
+    """Async DeepSeek client via OpenAI-compatible API."""
 
     def __init__(self):
         api_key = settings.DEEPSEEK_API_KEY or os.getenv("DEEPSEEK_API_KEY", "")
-        if not api_key:
-            logger.warning(
-                "DEEPSEEK_API_KEY is not set. DeepSeek API calls will fail. "
-                "Set DEEPSEEK_API_KEY in .env or environment variables."
-            )
-
-        base_url = getattr(settings, "DEEPSEEK_BASE_URL", None) or os.getenv(
-            "DEEPSEEK_BASE_URL", "https://api.deepseek.com"
-        )
-
-        # Use a placeholder key if not set (prevents OpenAI client init error)
-        # The actual API call will fail gracefully with a clear error message
-        effective_key = api_key or "sk-no-deepseek-api-key-set"
-
-        self.client = OpenAI(
-            api_key=effective_key,
-            base_url=base_url,
-            timeout=DEFAULT_TIMEOUT,
-            max_retries=DEFAULT_MAX_RETRIES,
-        )
-        self.model = settings.DEEPSEEK_MODEL
         self._has_api_key = bool(api_key)
 
+        base_url = settings.DEEPSEEK_BASE_URL
+        effective_key = api_key or "sk-no-deepseek-api-key-set"
+
+        self.client = AsyncOpenAI(
+            api_key=effective_key,
+            base_url=base_url,
+            timeout=settings.LLM_TIMEOUT,
+            max_retries=0,
+        )
+        self.model = settings.DEEPSEEK_MODEL
+        self.provider = "deepseek"
+
+    @property
+    def is_available(self) -> bool:
+        return self._has_api_key
+
     def _resolve_model(self, model: Optional[str] = None) -> str:
-        """Resolve model name, converting legacy names to V4 equivalents."""
+        """Resolve model name, converting legacy names."""
         resolved = model or self.model
         if resolved in LEGACY_MODEL_MAP:
             new_name = LEGACY_MODEL_MAP[resolved]
@@ -60,7 +55,7 @@ class DeepSeekClient:
             return new_name
         return resolved
 
-    def generate(
+    async def generate(
         self,
         prompt: str,
         model: Optional[str] = None,
@@ -68,28 +63,13 @@ class DeepSeekClient:
         max_tokens: int = 2048,
         system_prompt: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """
-        Generate a chat completion via DeepSeek API.
-
-        Args:
-            prompt: User message
-            model: Override model name (supports deepseek-v4-flash, deepseek-v4-pro)
-            temperature: Sampling temperature (0.0-2.0)
-            max_tokens: Maximum tokens in response
-            system_prompt: Optional system prompt
-
-        Returns:
-            Dict with 'content' and 'usage' keys
-        """
-        resolved_model = self._resolve_model(model)
-
-        # Validate API key before making the request
+        """Generate chat completion."""
         if not self._has_api_key:
             return {
                 "content": "",
                 "usage": {},
                 "error": "api_key_missing",
-                "detail": "DEEPSEEK_API_KEY is not configured. Please set it in .env or environment variables. Get your key at https://platform.deepseek.com/",
+                "detail": "DEEPSEEK_API_KEY is not configured.",
             }
 
         messages = []
@@ -97,61 +77,87 @@ class DeepSeekClient:
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
 
+        resolved_model = self._resolve_model(model)
+
         try:
-            logger.info(
-                f"DeepSeek request: model={resolved_model}, "
-                f"max_tokens={max_tokens}, temperature={temperature}"
-            )
-            response = self.client.chat.completions.create(
+            logger.info(f"DeepSeek request: model={resolved_model}")
+            response = await self.client.chat.completions.create(
                 model=resolved_model,
                 messages=messages,
                 temperature=temperature,
                 max_tokens=max_tokens,
             )
-            content = response.choices[0].message.content
-            usage = {
-                "prompt_tokens": response.usage.prompt_tokens,
-                "completion_tokens": response.usage.completion_tokens,
-                "total_tokens": response.usage.total_tokens,
-            }
-            logger.info(
-                f"DeepSeek response: {usage.get('total_tokens', '?')} tokens used"
-            )
-            return {"content": content, "usage": usage}
-        except APITimeoutError as e:
-            logger.error(f"DeepSeek timeout: {e}")
-            return {
-                "content": "",
-                "usage": {},
-                "error": "timeout",
-                "detail": "Request to DeepSeek API timed out. Please try again.",
-            }
-        except APIError as e:
-            logger.error(f"DeepSeek API error: {e}")
-            return {
-                "content": "",
-                "usage": {},
-                "error": "api_error",
-                "detail": str(e),
-            }
-        except Exception as e:
-            logger.error(f"DeepSeek unexpected error: {e}", exc_info=True)
-            return {
-                "content": "",
-                "usage": {},
-                "error": "unexpected",
-                "detail": str(e),
+
+            content = response.choices[0].message.content or ""
+            usage = response.usage
+            usage_dict = {
+                "prompt_tokens": usage.prompt_tokens,
+                "completion_tokens": usage.completion_tokens,
+                "total_tokens": usage.total_tokens,
             }
 
-    def list_models(self) -> Dict[str, Any]:
-        """List available DeepSeek models."""
-        return {
-            "models": [
-                {"id": "deepseek-v4-flash", "description": "Efficiency-optimized, 284B MoE, 13B active params"},
-                {"id": "deepseek-v4-pro", "description": "Full capability model with 1.6T parameters"},
-            ],
-            "deprecated": [
-                {"id": "deepseek-chat", "replacement": "deepseek-v4-flash", "deprecated_on": "2026-07-24"},
-                {"id": "deepseek-reasoner", "replacement": "deepseek-v4-pro", "deprecated_on": "2026-07-24"},
-            ],
-        }
+            cost = self._calculate_cost(resolved_model, usage_dict)
+
+            return {
+                "content": content,
+                "usage": usage_dict,
+                "cost_usd": cost,
+                "model": response.model,
+                "provider": self.provider,
+            }
+
+        except AuthenticationError as e:
+            logger.error(f"DeepSeek authentication error: {e}")
+            raise
+        except APITimeoutError as e:
+            logger.error(f"DeepSeek timeout: {e}")
+            raise
+        except APIError as e:
+            logger.error(f"DeepSeek API error: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"DeepSeek unexpected error: {e}")
+            raise
+
+    async def generate_stream(
+        self,
+        prompt: str,
+        model: Optional[str] = None,
+        temperature: float = 0.7,
+        max_tokens: int = 2048,
+        system_prompt: Optional[str] = None,
+    ) -> AsyncGenerator[str, None]:
+        """Generate streaming response."""
+        if not self._has_api_key:
+            yield ""
+            return
+
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+
+        resolved_model = self._resolve_model(model)
+
+        try:
+            stream = await self.client.chat.completions.create(
+                model=resolved_model,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                stream=True,
+            )
+
+            async for chunk in stream:
+                if chunk.choices and chunk.choices[0].delta.content:
+                    yield chunk.choices[0].delta.content
+
+        except Exception as e:
+            logger.error(f"DeepSeek streaming error: {e}")
+            raise
+
+    def _calculate_cost(self, model: str, usage: Dict[str, int]) -> float:
+        rates = COST_PER_1K.get(model, {"input": 0.0001, "output": 0.0001})
+        input_cost = (usage.get("prompt_tokens", 0) / 1000) * rates["input"]
+        output_cost = (usage.get("completion_tokens", 0) / 1000) * rates["output"]
+        return round(input_cost + output_cost, 6)
