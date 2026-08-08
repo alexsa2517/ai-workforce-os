@@ -1,103 +1,134 @@
-# AI Workforce OS
+# AI Workforce OS (Improved)
 
-Build the Operating System for AI Employees.
+Production-ready Operating System for AI Employees.
 
-## Mission
+## ✨ Improvements
 
-Help businesses deploy AI Employees in minutes.
+- 🎬 **Video Generation**: Full 5-phase AI video production workflow
+- 🔒 **Security**: API Key + JWT auth, restricted CORS, rate limiting
+- ⚡ **Performance**: Async PostgreSQL, Redis caching, connection pooling
+- 🔄 **Resilience**: LLM fallback chain with retry + backoff
+- 📊 **Monitoring**: Prometheus metrics, structured logging
+- 🗄️ **Persistence**: Database-backed agents, chat history, cost tracking
+- 🐳 **DevOps**: Multi-stage Dockerfile, health checks, docker-compose
 
-## Vision
-
-The Operating System for AI Employees.
-
-## Project Structure
-
-This project is structured into several key components:
-
-- `agents`: Contains the core AI agents, such as `DirectorAI`.
-- `api`: Defines the API endpoints for interacting with the AI Workforce OS.
-- `backend`: Houses the FastAPI application, services, and agent implementations.
-- `database`: Placeholder for database-related configurations and migrations.
-- `deployment`: Contains deployment scripts and configurations.
-- `docs`: Comprehensive documentation for the project, including architecture, API, and agent specifics.
-- `frontend`: Frontend application code.
-- `knowledge`: Stores knowledge bases for AI agents, e.g., character data for `DirectorAI`.
-- `tests`: Unit and integration tests.
-
-## Setup and Installation
-
-To set up and run the project locally, follow these steps:
-
-1.  **Clone the repository:**
-
-    ```bash
-    git clone https://github.com/alexsa2517/ai-workforce-os.git
-    cd ai-workforce-os
-    ```
-
-2.  **Create a Python virtual environment and activate it:**
-
-    ```bash
-    python3 -m venv venv
-    source venv/bin/activate
-    ```
-
-3.  **Install backend dependencies:**
-
-    ```bash
-    pip install -r backend/requirements.txt
-    ```
-
-4.  **Set up environment variables:**
-
-    Create a `.env` file in the `backend` directory with your API keys:
-
-    ```
-    OPENAI_API_KEY="your_openai_api_key"
-    GEMINI_API_KEY="your_gemini_api_key"
-    ```
-
-## Running the Application
-
-To run the FastAPI backend:
+## 🚀 Quick Start
 
 ```bash
-cd backend
-uvicorn app.main:app --reload
+# 1. Clone and setup
+git clone <repo>
+cd ai-workforce-os-improved
+
+# 2. Configure environment
+cp .env.example .env
+# Edit .env with your API keys
+
+# 3. Start with Docker
+make docker-up
+
+# 4. Check health
+curl http://localhost:8000/api/v1/health/ready
 ```
 
-The API will be accessible at `http://127.0.0.1:8000`.
+## 📁 Project Structure
 
-## DirectorAI
+```
+├── backend/
+│   ├── app/
+│   │   ├── core/          # Config, schemas, brain, logging
+│   │   ├── database/      # Async SQLAlchemy models
+│   │   ├── middleware/    # Auth, error handling, rate limiting
+│   │   ├── routers/       # API endpoints
+│   │   ├── services/      # LLM factory, cache, monitoring
+│   │   ├── auth/          # JWT utilities
+│   │   └── utils/         # Helpers
+│   ├── alembic/           # Database migrations
+│   └── requirements.txt
+├── docker-compose.yml
+├── Dockerfile
+├── Makefile
+└── monitoring/
+    └── prometheus.yml
+```
 
-The `DirectorAI` agent is responsible for generating scenes based on loaded knowledge. It uses `memory_loader.py` to load character, world, and episode data from the `knowledge/director-ai` directory.
+## 🔐 Security Checklist
 
-## LLM Services
+- [ ] Change `API_KEY` in production (min 16 chars)
+- [ ] Change `JWT_SECRET` in production (min 32 chars)
+- [ ] Set `APP_DEBUG=false` in production
+- [ ] Configure `CORS_ORIGINS` to your domain only
+- [ ] Use HTTPS in production
+- [ ] Enable firewall rules
+- [ ] Rotate API keys regularly
 
-The project integrates with various Large Language Models (LLMs) through a factory pattern. The `LLMFactory` in `backend/app/services/llm/factory.py` provides a unified interface to interact with different LLM providers such as OpenAI and Gemini.
+## 📊 Monitoring
 
-## AI Development Tools
+```bash
+# Start with monitoring stack
+docker-compose --profile monitoring up -d
 
-This project is optimized for AI-assisted development:
+# Access Prometheus: http://localhost:9090
+# Access Grafana: http://localhost:3001 (admin/admin)
+```
 
-- **Aider:** You can use [Aider](https://aider.chat/) to collaborate with LLMs (like DeepSeek or GPT-4o) directly in your terminal to edit and create files.
-- **Environment Setup:** Ensure you have your `DEEPSEEK_API_KEY`, `OPENAI_API_KEY`, or `GOOGLE_API_KEY` set in your environment or a `.env` file to enable AI features.
+## 🧪 Testing
 
-## DeepSeek V4 Migration (July 2026)
+```bash
+make test
+```
 
-As of July 24, 2026, DeepSeek has deprecated the legacy model names `deepseek-chat` and `deepseek-reasoner`. This project has been updated to support the new **DeepSeek V4 API**:
 
-- **Default Model:** `deepseek-v4-flash` (replaces `deepseek-chat`)
-- **Pro Model:** `deepseek-v4-pro` (replaces `deepseek-reasoner`)
-- **Base URL:** `https://api.deepseek.com` (configurable)
-- **Legacy Support:** Automatic mapping of old model names to V4 equivalents.
+## 🎬 Video Generation
 
-## Bug Fixes and Improvements (July 2026)
+ระบบสร้างวิดีโอด้วย AI แบบ End-to-End:
 
--   **DeepSeek V4 Migration:** Fully updated DeepSeek client to support V4 API and deprecated legacy model names.
--   **Enhanced Error Handling:** Improved LLM clients (OpenAI, Gemini, DeepSeek) with better API key validation and clear error messages.
--   **Fixed `knowledge` directory path:** Corrected the directory name from `" director-ai"` to `"director-ai"`.
--   **Corrected LLM service imports:** Adjusted import paths in `backend/app/services/llm/factory.py`.
--   **Updated OpenAI model:** Changed the OpenAI model to `gpt-4o`.
--   **Updated Gemini integration:** Refactored to use `google.generativeai` and updated to `gemini-1.5-pro`.
--   **Updated `requirements.txt`:** Updated all dependencies to latest stable versions.
+```bash
+# 1. สร้างโปรเจกต์
+curl -X POST http://localhost:8000/api/v1/video/projects \
+  -H "X-API-Key: your-key" \
+  -d '{"title":"My Video","duration_target":60}'
+
+# 2. กำหนดสไตล์ + รัน pipeline
+curl -X POST http://localhost:8000/api/v1/video/projects/vid_xxx/run-pipeline \
+  -H "X-API-Key: your-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "style_spec": {
+      "sub_genre": "Cyberpunk anime",
+      "rendering_line": "2D digital painting",
+      "color_lighting": "Neon, dark backgrounds",
+      "detail_density": "Highly detailed"
+    },
+    "bgm_source": "separate",
+    "bgm_properties": {
+      "genre_style": "Electronic",
+      "bpm": 120,
+      "core_instrumentation": ["synth", "bass"]
+    }
+  }'
+```
+
+อ่านเพิ่มเติม: [docs/VIDEO_GENERATION.md](docs/VIDEO_GENERATION.md)
+
+## 📝 API Usage
+
+```bash
+# Health check
+curl http://localhost:8000/api/v1/health/
+
+# Chat with fallback
+curl -X POST http://localhost:8000/api/v1/chat/ \
+  -H "X-API-Key: your-key" \
+  -H "Content-Type: application/json" \
+  -d '{"message":"Hello","provider":"openai"}'
+
+# Stream response
+curl -X POST http://localhost:8000/api/v1/chat/stream \
+  -H "X-API-Key: your-key" \
+  -H "Content-Type: application/json" \
+  -d '{"message":"Hello","provider":"openai"}'
+```
+
+## 📄 License
+
+MIT
