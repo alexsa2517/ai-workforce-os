@@ -1,34 +1,39 @@
+"""
+DirectorAI Memory Loader
+Loads character, world, and episode data from knowledge base.
+"""
+import logging
 import json
 from pathlib import Path
+from typing import Dict, Any, Optional
+from app.core.config import settings
 
-
-# Resolve path relative to the repository root
-# This ensures it works whether run from root or from backend/ directory
-BASE_PATH = Path(__file__).resolve().parents[4] / "knowledge" / "director-ai"
+logger = logging.getLogger("ai_workforce.agents.director_ai.memory")
 
 
 class DirectorMemoryLoader:
+    """Loads director AI knowledge from filesystem."""
 
-    def load_json(self, file_path):
-        with open(file_path, "r", encoding="utf-8") as file:
-            return json.load(file)
+    def __init__(self, knowledge_dir: Optional[str] = None):
+        self.knowledge_dir = Path(knowledge_dir or settings.KNOWLEDGE_DIR)
 
+    def load_character(self, name: str) -> Dict[str, Any]:
+        """Load character data."""
+        path = self.knowledge_dir / "characters" / f"{name}.json"
+        if path.exists():
+            return json.loads(path.read_text(encoding="utf-8"))
+        return {"name": name, "description": "", "traits": []}
 
-    def load_character(self, character_name):
-        path = BASE_PATH / "characters" / f"{character_name}.json"
-        return self.load_json(path)
+    def load_world(self, name: str) -> Dict[str, Any]:
+        """Load world data."""
+        path = self.knowledge_dir / "worlds" / f"{name}.json"
+        if path.exists():
+            return json.loads(path.read_text(encoding="utf-8"))
+        return {"name": name, "description": ""}
 
-
-    def load_world(self, world_name):
-        path = BASE_PATH / "worlds" / f"{world_name}.json"
-        return self.load_json(path)
-
-
-    def load_story(self, story_name):
-        path = BASE_PATH / "stories" / f"{story_name}.json"
-        return self.load_json(path)
-
-
-    def load_episode(self, episode_name):
-        path = BASE_PATH / "episodes" / f"{episode_name}.json"
-        return self.load_json(path)
+    def load_episode(self, name: str) -> Dict[str, Any]:
+        """Load episode data."""
+        path = self.knowledge_dir / "episodes" / f"{name}.json"
+        if path.exists():
+            return json.loads(path.read_text(encoding="utf-8"))
+        return {"name": name, "scenes": []}
