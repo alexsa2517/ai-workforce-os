@@ -1,1 +1,1 @@
-"""Alembic migration versions package."""
+"""Alembic versions."""
