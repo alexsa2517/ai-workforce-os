@@ -1,72 +1,79 @@
 """
-Auth Router - Authentication endpoints for login and token management
+Auth Router - JWT token generation and validation
 """
-
 import logging
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
+from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-from fastapi import APIRouter, HTTPException
-
-from app.auth.jwt_utils import create_access_token, TokenResponse
+from app.core.schemas import TokenRequest, TokenResponse
 from app.core.config import settings
+from app.middleware.error_handler import APIError
+import jwt
 
 logger = logging.getLogger("ai_workforce.routers.auth")
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
+security = HTTPBearer(auto_error=False)
 
-
-class LoginRequest:
-    """Login request model (simplified for initial implementation)."""
-    def __init__(self, username: str, password: str):
-        self.username = username
-        self.password = password
+# Simple user store (in production, use database with hashed passwords)
+# Format: {username: {password_hash, role}}
+_USERS = {
+    "admin": {"password": "admin123", "role": "admin"},
+    "user": {"password": "user123", "role": "user"},
+}
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(request: dict):
-    """
-    Authenticate user and return JWT token.
+async def login(credentials: TokenRequest):
+    """Authenticate and get JWT token."""
+    user = _USERS.get(credentials.username)
 
-    In production, this should validate against a database.
-    Currently uses a simple check for demonstration.
-    """
-    username = request.get("username", "")
-    password = request.get("password", "")
-
-    # Simple validation (replace with database lookup in production)
-    if not username or not password:
-        raise HTTPException(status_code=400, detail="Username and password are required")
-
-    # Demo credentials (replace with proper auth in production)
-    if username == "admin" and password == "admin123":
-        token = create_access_token(
-            data={"sub": username, "role": "admin"},
-            expires_delta=timedelta(hours=24),
-        )
-        logger.info(f"User '{username}' logged in successfully")
-        return TokenResponse(
-            access_token=token,
-            token_type="bearer",
-            expires_in=86400,
+    if not user or user["password"] != credentials.password:
+        raise APIError(
+            message="Invalid username or password",
+            status_code=401,
+            error_code="invalid_credentials",
         )
 
-    # Accept any non-empty credentials for development
-    if len(password) >= 6:
-        token = create_access_token(
-            data={"sub": username, "role": "user"},
-            expires_delta=timedelta(hours=24),
+    expire = datetime.now(timezone.utc) + timedelta(hours=settings.JWT_EXPIRATION_HOURS)
+
+    payload = {
+        "sub": credentials.username,
+        "role": user["role"],
+        "exp": expire,
+        "iat": datetime.now(timezone.utc),
+    }
+
+    token = jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+
+    logger.info(f"Token created for user: {credentials.username}")
+
+    return TokenResponse(
+        access_token=token,
+        token_type="bearer",
+        expires_in=settings.JWT_EXPIRATION_HOURS * 3600,
+    )
+
+
+@router.get("/me")
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Get current authenticated user info."""
+    if not credentials:
+        raise HTTPException(status_code=401, detail="No token provided")
+
+    try:
+        payload = jwt.decode(
+            credentials.credentials,
+            settings.JWT_SECRET,
+            algorithms=[settings.JWT_ALGORITHM],
         )
-        logger.info(f"User '{username}' logged in (dev mode)")
-        return TokenResponse(
-            access_token=token,
-            token_type="bearer",
-            expires_in=86400,
-        )
-
-    raise HTTPException(status_code=401, detail="Invalid credentials")
-
-
-@router.post("/refresh")
-async def refresh_token():
-    """Refresh an expired token (placeholder)."""
-    return {"message": "Token refresh endpoint - implement with refresh token logic"}
+        return {
+            "username": payload["sub"],
+            "role": payload.get("role", "user"),
+            "exp": payload["exp"],
+        }
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
