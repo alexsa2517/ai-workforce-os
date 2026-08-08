@@ -1,17 +1,9 @@
-# Environment
-.env
-*.env.local
-
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-env/
-venv/
-.venv/
-ENV/
 build/
 develop-eggs/
 dist/
@@ -28,36 +20,49 @@ wheels/
 .installed.cfg
 *.egg
 
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
 # IDE
-.vscode/
 .idea/
+.vscode/
 *.swp
 *.swo
+*~
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Data
-data/
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Database
 *.db
 *.sqlite
+*.sqlite3
 
 # Logs
 logs/
 *.log
 
-# Movies/Generated content
+# Movies
 movies/
 
-# Testing
+# Alembic
+alembic.ini
+
+# pytest
 .pytest_cache/
 .coverage
 htmlcov/
 
-# Node
-frontend/node_modules/
-frontend/dist/
-
-# Docker
-.docker/
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
