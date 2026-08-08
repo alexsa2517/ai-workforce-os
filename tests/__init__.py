@@ -1,3 +1,1 @@
-"""
-Tests - Test suite for AI Workforce OS
-"""
+"""Tests module."""
