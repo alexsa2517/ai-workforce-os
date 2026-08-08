@@ -1,124 +1,133 @@
-"""Initial database schema
+"""Initial migration
 
 Revision ID: 001
-Revises:
-Create Date: 2026-01-01 00:00:00.000000
+Revises: 
+Create Date: 2026-08-08 10:00:00.000000
+
 """
 from typing import Sequence, Union
+
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
-revision: str = "001"
+# revision identifiers
+revision: str = '001'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Create ai_agents table
+    # AI Agents
     op.create_table(
-        "ai_agents",
-        sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("agent_id", sa.String(255), nullable=False),
-        sa.Column("name", sa.String(255), nullable=False),
-        sa.Column("role", sa.String(255), nullable=False),
-        sa.Column("description", sa.Text(), nullable=True),
-        sa.Column("status", sa.String(50), nullable=True),
-        sa.Column("capabilities", sa.Text(), nullable=True),
-        sa.Column("config", sa.Text(), nullable=True),
-        sa.Column("created_at", sa.DateTime(), nullable=True),
-        sa.Column("updated_at", sa.DateTime(), nullable=True),
-        sa.Column("last_active", sa.DateTime(), nullable=True),
-        sa.PrimaryKeyConstraint("id"),
+        'ai_agents',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('agent_id', sa.String(255), nullable=False),
+        sa.Column('name', sa.String(255), nullable=False),
+        sa.Column('role', sa.String(255), nullable=False),
+        sa.Column('description', sa.Text(), nullable=True),
+        sa.Column('status', sa.String(50), nullable=True),
+        sa.Column('capabilities', postgresql.JSON(astext_type=sa.Text()), nullable=True),
+        sa.Column('config', postgresql.JSON(astext_type=sa.Text()), nullable=True),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()')),
+        sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
+        sa.Column('last_active', sa.DateTime(timezone=True), nullable=True),
+        sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint('agent_id'),
     )
-    op.create_index(op.f("ix_ai_agents_id"), "ai_agents", ["id"], unique=False)
-    op.create_index(
-        op.f("ix_ai_agents_agent_id"), "ai_agents", ["agent_id"], unique=True
+    op.create_index('idx_agent_status', 'ai_agents', ['status'])
+    op.create_index('idx_agent_created', 'ai_agents', ['created_at'])
+
+    # AI Tasks
+    op.create_table(
+        'ai_tasks',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('task_id', sa.String(255), nullable=False),
+        sa.Column('agent_id', sa.String(255), nullable=False),
+        sa.Column('task_type', sa.String(255), nullable=False),
+        sa.Column('description', sa.Text(), nullable=False),
+        sa.Column('priority', sa.Integer(), nullable=True),
+        sa.Column('status', sa.String(50), nullable=True),
+        sa.Column('parameters', postgresql.JSON(astext_type=sa.Text()), nullable=True),
+        sa.Column('result', postgresql.JSON(astext_type=sa.Text()), nullable=True),
+        sa.Column('error_message', sa.Text(), nullable=True),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()')),
+        sa.Column('started_at', sa.DateTime(timezone=True), nullable=True),
+        sa.Column('completed_at', sa.DateTime(timezone=True), nullable=True),
+        sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint('task_id'),
+        sa.ForeignKeyConstraint(['agent_id'], ['ai_agents.agent_id'], ondelete='CASCADE'),
+    )
+    op.create_index('idx_task_status_agent', 'ai_tasks', ['status', 'agent_id'])
+
+    # Conversations
+    op.create_table(
+        'conversations',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('session_id', sa.String(255), nullable=False),
+        sa.Column('agent_id', sa.String(255), nullable=True),
+        sa.Column('role', sa.String(50), nullable=False),
+        sa.Column('content', sa.Text(), nullable=False),
+        sa.Column('tokens_used', sa.Integer(), nullable=True),
+        sa.Column('provider', sa.String(50), nullable=True),
+        sa.Column('model', sa.String(100), nullable=True),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()')),
+        sa.PrimaryKeyConstraint('id'),
+        sa.ForeignKeyConstraint(['agent_id'], ['ai_agents.agent_id'], ondelete='SET NULL'),
+    )
+    op.create_index('idx_conv_session', 'conversations', ['session_id', 'created_at'])
+
+    # Chat Sessions
+    op.create_table(
+        'chat_sessions',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('session_id', sa.String(255), nullable=False),
+        sa.Column('title', sa.String(500), nullable=True),
+        sa.Column('agent_id', sa.String(255), nullable=True),
+        sa.Column('metadata', postgresql.JSON(astext_type=sa.Text()), nullable=True),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()')),
+        sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
+        sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint('session_id'),
+        sa.ForeignKeyConstraint(['agent_id'], ['ai_agents.agent_id'], ondelete='SET NULL'),
     )
 
-    # Create ai_tasks table
+    # LLM Usage Logs
     op.create_table(
-        "ai_tasks",
-        sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("task_id", sa.String(255), nullable=False),
-        sa.Column("agent_id", sa.String(255), nullable=False),
-        sa.Column("task_type", sa.String(255), nullable=False),
-        sa.Column("description", sa.Text(), nullable=False),
-        sa.Column("priority", sa.Integer(), nullable=True),
-        sa.Column("status", sa.String(50), nullable=True),
-        sa.Column("parameters", sa.Text(), nullable=True),
-        sa.Column("result", sa.Text(), nullable=True),
-        sa.Column("error_message", sa.Text(), nullable=True),
-        sa.Column("created_at", sa.DateTime(), nullable=True),
-        sa.Column("started_at", sa.DateTime(), nullable=True),
-        sa.Column("completed_at", sa.DateTime(), nullable=True),
-        sa.ForeignKeyConstraint(["agent_id"], ["ai_agents.agent_id"]),
-        sa.PrimaryKeyConstraint("id"),
+        'llm_usage_logs',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('provider', sa.String(50), nullable=False),
+        sa.Column('model', sa.String(100), nullable=False),
+        sa.Column('prompt_tokens', sa.Integer(), nullable=True),
+        sa.Column('completion_tokens', sa.Integer(), nullable=True),
+        sa.Column('total_tokens', sa.Integer(), nullable=True),
+        sa.Column('estimated_cost_usd', sa.Float(), nullable=True),
+        sa.Column('request_duration_ms', sa.Float(), nullable=True),
+        sa.Column('success', sa.Boolean(), nullable=True),
+        sa.Column('error_message', sa.Text(), nullable=True),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()')),
+        sa.PrimaryKeyConstraint('id'),
     )
-    op.create_index(op.f("ix_ai_tasks_id"), "ai_tasks", ["id"], unique=False)
-    op.create_index(
-        op.f("ix_ai_tasks_task_id"), "ai_tasks", ["task_id"], unique=True
-    )
+    op.create_index('idx_llm_usage_provider', 'llm_usage_logs', ['provider', 'created_at'])
 
-    # Create chat_sessions table
+    # System Metrics
     op.create_table(
-        "chat_sessions",
-        sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("session_id", sa.String(255), nullable=False),
-        sa.Column("provider", sa.String(50), nullable=False),
-        sa.Column("model", sa.String(255), nullable=False),
-        sa.Column("system_prompt", sa.Text(), nullable=True),
-        sa.Column("temperature", sa.Float(), nullable=True),
-        sa.Column("max_tokens", sa.Integer(), nullable=True),
-        sa.Column("is_active", sa.Boolean(), nullable=True),
-        sa.Column("created_at", sa.DateTime(), nullable=True),
-        sa.Column("updated_at", sa.DateTime(), nullable=True),
-        sa.PrimaryKeyConstraint("id"),
+        'system_metrics',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('metric_name', sa.String(255), nullable=False),
+        sa.Column('metric_value', sa.Float(), nullable=False),
+        sa.Column('labels', postgresql.JSON(astext_type=sa.Text()), nullable=True),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()')),
+        sa.PrimaryKeyConstraint('id'),
     )
-    op.create_index(
-        op.f("ix_chat_sessions_id"), "chat_sessions", ["id"], unique=False
-    )
-    op.create_index(
-        op.f("ix_chat_sessions_session_id"),
-        "chat_sessions",
-        ["session_id"],
-        unique=True,
-    )
-
-    # Create chat_messages table
-    op.create_table(
-        "chat_messages",
-        sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("session_id", sa.Integer(), nullable=False),
-        sa.Column("role", sa.String(50), nullable=False),
-        sa.Column("content", sa.Text(), nullable=False),
-        sa.Column("token_count", sa.Integer(), nullable=True),
-        sa.Column("created_at", sa.DateTime(), nullable=True),
-        sa.ForeignKeyConstraint(["session_id"], ["chat_sessions.id"]),
-        sa.PrimaryKeyConstraint("id"),
-    )
-    op.create_index(
-        op.f("ix_chat_messages_id"), "chat_messages", ["id"], unique=False
-    )
+    op.create_index('idx_metric_name_time', 'system_metrics', ['metric_name', 'created_at'])
 
 
 def downgrade() -> None:
-    op.drop_index(
-        op.f("ix_chat_messages_id"), table_name="chat_messages"
-    )
-    op.drop_table("chat_messages")
-    op.drop_index(
-        op.f("ix_chat_sessions_session_id"), table_name="chat_sessions"
-    )
-    op.drop_index(op.f("ix_chat_sessions_id"), table_name="chat_sessions")
-    op.drop_table("chat_sessions")
-    op.drop_index(
-        op.f("ix_ai_tasks_task_id"), table_name="ai_tasks"
-    )
-    op.drop_index(op.f("ix_ai_tasks_id"), table_name="ai_tasks")
-    op.drop_table("ai_tasks")
-    op.drop_index(
-        op.f("ix_ai_agents_agent_id"), table_name="ai_agents"
-    )
-    op.drop_index(op.f("ix_ai_agents_id"), table_name="ai_agents")
-    op.drop_table("ai_agents")
+    op.drop_table('system_metrics')
+    op.drop_table('llm_usage_logs')
+    op.drop_table('chat_sessions')
+    op.drop_table('conversations')
+    op.drop_table('ai_tasks')
+    op.drop_table('ai_agents')
