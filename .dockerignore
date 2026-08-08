@@ -1,15 +1,54 @@
+# Git
 .git
 .gitignore
-.env
-*.md
-LICENSE
-CHANGELOG.md
-CONTRIBUTING.md
-docs/
-tests/
-.pytest_cache
+
+# Python
 __pycache__
 *.pyc
-node_modules
-frontend/dist
-frontend/build
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info
+dist
+build
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Movies (generated content)
+movies/
+
+# Environment files (don't copy secrets)
+.env
+.env.local
+.env.*.local
+
+# Tests (optional - include if you want to run tests in container)
+# tests/
+
+# Documentation
+docs/
+*.md
+
+# Monitoring config (mount separately)
+monitoring/
