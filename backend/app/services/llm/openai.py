@@ -1,38 +1,45 @@
 """
-OpenAI LLM Client - Chat completions with error handling and timeout
+OpenAI Async LLM Client
+Supports streaming, async operations, and structured error handling.
 """
 import os
 import logging
-from typing import Any, Dict, Optional
-from openai import OpenAI, APITimeoutError, APIError
+from typing import Any, Dict, Optional, AsyncGenerator
+from openai import AsyncOpenAI, APITimeoutError, APIError, AuthenticationError
 from app.core.config import settings
 
 logger = logging.getLogger("ai_workforce.llm.openai")
 
-DEFAULT_TIMEOUT = 30.0  # seconds
-DEFAULT_MAX_RETRIES = 2
+# Cost per 1K tokens (approximate, update as needed)
+COST_PER_1K = {
+    "gpt-4o": {"input": 0.005, "output": 0.015},
+    "gpt-4o-mini": {"input": 0.00015, "output": 0.0006},
+    "gpt-4-turbo": {"input": 0.01, "output": 0.03},
+}
 
 
 class OpenAIClient:
-    """OpenAI chat completions client with retry and error handling."""
+    """Async OpenAI client with retry, streaming, and cost tracking."""
 
     def __init__(self):
         api_key = settings.OPENAI_API_KEY or os.getenv("OPENAI_API_KEY", "")
-        if not api_key:
-            logger.warning("OPENAI_API_KEY is not set. OpenAI API calls will fail.")
-        
-        # Use placeholder to prevent init error
-        effective_key = api_key or "sk-no-openai-api-key-set"
-        
-        self.client = OpenAI(
-            api_key=effective_key,
-            timeout=DEFAULT_TIMEOUT,
-            max_retries=DEFAULT_MAX_RETRIES,
-        )
-        self.model = settings.OPENAI_MODEL
         self._has_api_key = bool(api_key)
 
-    def generate(
+        effective_key = api_key or "sk-no-openai-api-key-set"
+
+        self.client = AsyncOpenAI(
+            api_key=effective_key,
+            timeout=settings.LLM_TIMEOUT,
+            max_retries=0,  # We handle retries at factory level
+        )
+        self.model = settings.OPENAI_MODEL
+        self.provider = "openai"
+
+    @property
+    def is_available(self) -> bool:
+        return self._has_api_key
+
+    async def generate(
         self,
         prompt: str,
         model: Optional[str] = None,
@@ -40,25 +47,13 @@ class OpenAIClient:
         max_tokens: int = 2048,
         system_prompt: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """
-        Generate a chat completion.
-
-        Args:
-            prompt: User message
-            model: Override model name
-            temperature: Sampling temperature (0.0-2.0)
-            max_tokens: Maximum tokens in response
-            system_prompt: Optional system prompt
-
-        Returns:
-            Dict with 'content' and 'usage' keys
-        """
+        """Generate chat completion asynchronously."""
         if not self._has_api_key:
             return {
                 "content": "",
                 "usage": {},
                 "error": "api_key_missing",
-                "detail": "OPENAI_API_KEY is not configured. Please set it in .env or environment variables.",
+                "detail": "OPENAI_API_KEY is not configured.",
             }
 
         messages = []
@@ -67,68 +62,84 @@ class OpenAIClient:
         messages.append({"role": "user", "content": prompt})
 
         try:
-            logger.info(f"OpenAI request: model={model or self.model}, max_tokens={max_tokens}")
-            response = self.client.chat.completions.create(
+            logger.info(f"OpenAI request: model={model or self.model}")
+            response = await self.client.chat.completions.create(
                 model=model or self.model,
                 messages=messages,
                 temperature=temperature,
                 max_tokens=max_tokens,
             )
-            
-            # Check for error in response (some proxies return error field instead of raising)
-            if hasattr(response, 'error') and response.error:
-                logger.error(f"OpenAI API returned an error: {response.error}")
-                return {
-                    "content": "",
-                    "usage": {},
-                    "error": "api_error",
-                    "detail": str(response.error),
-                }
 
-            if not response or not hasattr(response, 'choices') or not response.choices:
-                logger.error("OpenAI API returned an empty or invalid response")
-                return {
-                    "content": "",
-                    "usage": {},
-                    "error": "empty_response",
-                    "detail": "OpenAI API returned an empty or invalid response.",
-                }
+            content = response.choices[0].message.content or ""
+            usage = response.usage
+            usage_dict = {
+                "prompt_tokens": usage.prompt_tokens,
+                "completion_tokens": usage.completion_tokens,
+                "total_tokens": usage.total_tokens,
+            }
 
-            choice = response.choices[0]
-            content = choice.message.content if hasattr(choice, 'message') else ""
-            
-            usage = {}
-            if hasattr(response, 'usage') and response.usage:
-                usage = {
-                    "prompt_tokens": getattr(response.usage, 'prompt_tokens', 0),
-                    "completion_tokens": getattr(response.usage, 'completion_tokens', 0),
-                    "total_tokens": getattr(response.usage, 'total_tokens', 0),
-                }
-            
-            logger.info(f"OpenAI response received: {usage.get('total_tokens', '?')} tokens used")
-            return {"content": content, "usage": usage}
-            
+            # Calculate cost
+            cost = self._calculate_cost(model or self.model, usage_dict)
+
+            return {
+                "content": content,
+                "usage": usage_dict,
+                "cost_usd": cost,
+                "model": response.model,
+                "provider": self.provider,
+            }
+
+        except AuthenticationError as e:
+            logger.error(f"OpenAI authentication error: {e}")
+            raise
         except APITimeoutError as e:
             logger.error(f"OpenAI timeout: {e}")
-            return {
-                "content": "",
-                "usage": {},
-                "error": "timeout",
-                "detail": "Request to OpenAI API timed out.",
-            }
+            raise
         except APIError as e:
             logger.error(f"OpenAI API error: {e}")
-            return {
-                "content": "",
-                "usage": {},
-                "error": "api_error",
-                "detail": str(e),
-            }
+            raise
         except Exception as e:
-            logger.error(f"OpenAI unexpected error: {e}", exc_info=True)
-            return {
-                "content": "",
-                "usage": {},
-                "error": "unexpected",
-                "detail": str(e),
-            }
+            logger.error(f"OpenAI unexpected error: {e}")
+            raise
+
+    async def generate_stream(
+        self,
+        prompt: str,
+        model: Optional[str] = None,
+        temperature: float = 0.7,
+        max_tokens: int = 2048,
+        system_prompt: Optional[str] = None,
+    ) -> AsyncGenerator[str, None]:
+        """Generate streaming response."""
+        if not self._has_api_key:
+            yield ""
+            return
+
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+
+        try:
+            stream = await self.client.chat.completions.create(
+                model=model or self.model,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                stream=True,
+            )
+
+            async for chunk in stream:
+                if chunk.choices and chunk.choices[0].delta.content:
+                    yield chunk.choices[0].delta.content
+
+        except Exception as e:
+            logger.error(f"OpenAI streaming error: {e}")
+            raise
+
+    def _calculate_cost(self, model: str, usage: Dict[str, int]) -> float:
+        """Calculate approximate cost in USD."""
+        rates = COST_PER_1K.get(model, COST_PER_1K.get("gpt-4o", {"input": 0.005, "output": 0.015}))
+        input_cost = (usage.get("prompt_tokens", 0) / 1000) * rates["input"]
+        output_cost = (usage.get("completion_tokens", 0) / 1000) * rates["output"]
+        return round(input_cost + output_cost, 6)
