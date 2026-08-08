@@ -1,165 +1,146 @@
 """
-AI Brain - Central intelligence and reasoning module
-
-The Brain is the core cognitive component that processes inputs,
-manages context, and coordinates responses across AI services.
+AI Brain - Central intelligence with persistent context
+Manages conversation history via database and coordinates AI services.
 """
-
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+import uuid
+from typing import Any, Dict, List, Optional
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, desc
 
 from app.services.llm.factory import LLMFactory
 from app.core.config import settings
+from app.database.models import Conversation, AIAgent
 
 logger = logging.getLogger("ai_workforce.brain")
 
 
 class Brain:
-    """
-    Central AI Brain for the AI Workforce OS.
+    """Central AI Brain with persistent conversation context."""
 
-    Responsible for:
-    - Processing incoming messages
-    - Managing conversation context and memory
-    - Routing requests to appropriate AI services
-    - Maintaining agent state and personality
-    - Coordinating multi-agent workflows
-    """
-
-    def __init__(self, provider: str = "openai"):
-        """
-        Initialize the Brain with default settings.
-
-        Args:
-            provider: Default LLM provider to use
-        """
+    def __init__(self, provider: str = "openai", session_id: Optional[str] = None):
         self.provider = provider
-        self.context: List[Dict[str, str]] = []
-        self.system_prompt: str = (
+        self.session_id = session_id or str(uuid.uuid4())
+        self.system_prompt = (
             "You are an AI Employee in the AI Workforce OS system. "
             "You are professional, helpful, and capable of handling various tasks. "
-            "Always respond in the same language as the user."
+            "Always respond in the same language as the user. "
+            "Be concise but thorough."
         )
-        self.max_context_length: int = 50
-        logger.info(f"Brain initialized with provider: {provider}")
+        self.max_context_messages = 20
+        logger.info(f"Brain initialized: provider={provider}, session={self.session_id}")
 
-    def process(self, message: str, context: Optional[List[Dict[str, str]]] = None) -> Dict[str, Any]:
+    async def process(
+        self,
+        message: str,
+        db: AsyncSession,
+        system_prompt: Optional[str] = None,
+        context_limit: int = 10,
+    ) -> Dict[str, Any]:
         """
-        Process an incoming message and generate a response.
+        Process message with persistent context from database.
 
         Args:
-            message: User message to process
-            context: Optional conversation context history
+            message: User message
+            db: Database session
+            system_prompt: Override system prompt
+            context_limit: Number of previous messages to include
 
         Returns:
-            Dictionary with input, response, and metadata
+            Dict with response, usage, and metadata
         """
-        logger.info(f"Processing message (length: {len(message)})")
+        logger.info(f"Processing message (length={len(message)}, session={self.session_id})")
 
-        # Update context
-        if context:
-            self.context = context
-        self.context.append({"role": "user", "content": message})
+        # Fetch conversation history
+        result = await db.execute(
+            select(Conversation)
+            .where(Conversation.session_id == self.session_id)
+            .order_by(desc(Conversation.created_at))
+            .limit(context_limit)
+        )
+        history = result.scalars().all()
 
-        # Truncate context if too long
-        if len(self.context) > self.max_context_length:
-            self.context = self.context[-self.max_context_length:]
+        # Build messages
+        messages = [{"role": "system", "content": system_prompt or self.system_prompt}]
+        for msg in reversed(history):
+            messages.append({"role": msg.role, "content": msg.content})
+        messages.append({"role": "user", "content": message})
+
+        # Save user message
+        db.add(Conversation(
+            session_id=self.session_id,
+            role="user",
+            content=message,
+        ))
 
         # Generate response
         try:
-            llm = LLMFactory.get(self.provider)
-            response = llm.generate(
-                message=message,
-                system_prompt=self.system_prompt,
-                context=self.context,
+            result = await LLMFactory.generate(
+                prompt=message,
+                provider=self.provider,
+                system_prompt=system_prompt or self.system_prompt,
             )
-        except Exception as e:
-            logger.error(f"Brain processing error: {e}")
-            response = f"I apologize, but I encountered an error processing your request: {str(e)}"
 
-        # Add response to context
-        self.context.append({"role": "assistant", "content": response})
-
-        return {
-            "input": message,
-            "response": response,
-            "provider": self.provider,
-            "context_length": len(self.context),
-        }
-
-    def set_personality(self, personality: str) -> None:
-        """
-        Set the AI's personality and system prompt.
-
-        Args:
-            personality: Description of the desired personality
-        """
-        self.system_prompt = personality
-        logger.info("Personality updated")
-
-    def set_provider(self, provider: str) -> None:
-        """
-        Switch the LLM provider.
-
-        Args:
-            provider: New provider name
-        """
-        self.provider = provider
-        logger.info(f"Provider switched to: {provider}")
-
-    def clear_context(self) -> None:
-        """Clear conversation history."""
-        self.context = []
-        logger.info("Context cleared")
-
-    def get_context_summary(self) -> Dict[str, Any]:
-        """
-        Get a summary of the current conversation context.
-
-        Returns:
-            Context summary with metadata
-        """
-        return {
-            "total_messages": len(self.context),
-            "provider": self.provider,
-            "system_prompt_length": len(self.system_prompt),
-            "last_user_message": self.context[-1]["content"] if self.context and self.context[-1]["role"] == "user" else None,
-        }
-
-    def analyze_task(self, message: str) -> Dict[str, Any]:
-        """
-        Analyze a task request and determine the best course of action.
-
-        Args:
-            message: Task description
-
-        Returns:
-            Analysis result with task type, priority, and suggested action
-        """
-        task_keywords = {
-            "create": {"type": "creation", "priority": 3},
-            "analyze": {"type": "analysis", "priority": 2},
-            "report": {"type": "reporting", "priority": 2},
-            "search": {"type": "research", "priority": 3},
-            "schedule": {"type": "scheduling", "priority": 4},
-            "meeting": {"type": "coordination", "priority": 4},
-            "email": {"type": "communication", "priority": 3},
-            "data": {"type": "data_processing", "priority": 2},
-        }
-
-        message_lower = message.lower()
-        for keyword, task_info in task_keywords.items():
-            if keyword in message_lower:
+            if result.get("error"):
+                logger.error(f"Brain LLM error: {result['error']}")
                 return {
-                    "detected_task": task_info["type"],
-                    "priority": task_info["priority"],
-                    "confidence": 0.8,
-                    "suggested_action": f"Process as {task_info['type']} task",
+                    "response": f"I apologize, but I encountered an error: {result.get('detail', 'Unknown error')}",
+                    "error": result["error"],
+                    "session_id": self.session_id,
                 }
 
-        return {
-            "detected_task": "general",
-            "priority": 1,
-            "confidence": 0.5,
-            "suggested_action": "Process as general inquiry",
-        }
+            response_text = result["content"]
+            usage = result.get("usage", {})
+
+            # Save assistant response
+            db.add(Conversation(
+                session_id=self.session_id,
+                role="assistant",
+                content=response_text,
+                provider=result.get("provider"),
+                model=result.get("model"),
+                tokens_used=usage.get("total_tokens", 0),
+            ))
+
+            await db.commit()
+
+            return {
+                "response": response_text,
+                "usage": usage,
+                "provider": result.get("_provider_used", self.provider),
+                "model": result.get("model"),
+                "session_id": self.session_id,
+                "cost_usd": result.get("cost_usd", 0.0),
+            }
+
+        except Exception as e:
+            logger.error(f"Brain processing error: {e}", exc_info=True)
+            return {
+                "response": f"I apologize, but I encountered an error: {str(e)}",
+                "error": "processing_error",
+                "session_id": self.session_id,
+            }
+
+    async def get_context(self, db: AsyncSession, limit: int = 50) -> List[Dict[str, str]]:
+        """Get conversation context for this session."""
+        result = await db.execute(
+            select(Conversation)
+            .where(Conversation.session_id == self.session_id)
+            .order_by(desc(Conversation.created_at))
+            .limit(limit)
+        )
+        messages = result.scalars().all()
+        return [
+            {"role": msg.role, "content": msg.content}
+            for msg in reversed(messages)
+        ]
+
+    async def clear_context(self, db: AsyncSession) -> None:
+        """Clear conversation history for this session."""
+        result = await db.execute(
+            select(Conversation).where(Conversation.session_id == self.session_id)
+        )
+        for msg in result.scalars().all():
+            await db.delete(msg)
+        await db.commit()
+        logger.info(f"Context cleared for session {self.session_id}")
