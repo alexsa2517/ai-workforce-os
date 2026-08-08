@@ -1,3 +1,5 @@
-"""
-Core module - Application core components including brain, config, and utilities
-"""
+"""Core module."""
+from .config import settings
+from .schemas import *
+
+__all__ = ["settings"]
