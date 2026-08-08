@@ -1,38 +1,38 @@
 """
-Logging Middleware - Logs all incoming requests and outgoing responses
+Request/Response Logging Middleware
+Logs all requests with timing, status, and body size.
 """
-
-import time
 import logging
-
+import time
+from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
-from starlette.responses import Response
 
-logger = logging.getLogger("ai_workforce.middleware")
+logger = logging.getLogger("ai_workforce.middleware.logging")
 
 
 class LoggingMiddleware(BaseHTTPMiddleware):
-    """Middleware that logs all HTTP requests and responses."""
+    """Log all incoming requests and responses."""
 
-    async def dispatch(self, request: Request, call_next) -> Response:
+    async def dispatch(self, request: Request, call_next):
         start_time = time.time()
 
         # Log request
         logger.info(
-            f"REQUEST | {request.method} {request.url.path} | "
-            f"Client: {request.client.host if request.client else 'unknown'}"
+            f"→ Request: {request.method} {request.url.path} "
+            f"| Client: {request.client.host if request.client else 'unknown'} "
+            f"| UA: {request.headers.get('user-agent', 'unknown')[:50]}"
         )
 
-        # Process request
         response = await call_next(request)
 
-        # Log response
         duration = time.time() - start_time
+
+        # Log response
         logger.info(
-            f"RESPONSE | {request.method} {request.url.path} | "
-            f"Status: {response.status_code} | "
-            f"Duration: {duration:.4f}s"
+            f"← Response: {request.method} {request.url.path} "
+            f"| Status: {response.status_code} "
+            f"| Duration: {duration:.3f}s"
         )
 
+        response.headers["X-Process-Time"] = f"{duration:.3f}"
         return response
