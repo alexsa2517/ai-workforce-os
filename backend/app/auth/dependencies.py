@@ -1,72 +1,61 @@
 """
-Auth Dependencies - FastAPI dependency functions for authentication
-
-Provides get_current_user and optional authentication dependencies.
+Auth Dependencies - JWT validation for protected endpoints
 """
-
 import logging
 from typing import Optional
-
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+import jwt
 
-from app.auth.jwt_utils import decode_access_token, TokenPayload
+from app.core.config import settings
 
-logger = logging.getLogger("ai_workforce.auth.dependencies")
-
+logger = logging.getLogger("ai_workforce.auth")
 security = HTTPBearer(auto_error=False)
 
 
 async def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-) -> Optional[TokenPayload]:
-    """
-    Get the current authenticated user from JWT token.
-
-    Args:
-        credentials: HTTP Bearer token credentials
-
-    Returns:
-        TokenPayload if authenticated, None if no token provided
-
-    Raises:
-        HTTPException: If token is invalid
-    """
+) -> Optional[dict]:
+    """Validate JWT token and return user payload."""
     if credentials is None:
         return None
 
-    token = credentials.credentials
-    payload = decode_access_token(token)
-
-    if payload is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"},
+    try:
+        payload = jwt.decode(
+            credentials.credentials,
+            settings.JWT_SECRET,
+            algorithms=[settings.JWT_ALGORITHM],
         )
-
-    return payload
+        return {
+            "sub": payload["sub"],
+            "role": payload.get("role", "user"),
+        }
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 
 async def require_auth(
-    user: Optional[TokenPayload] = Depends(get_current_user),
-) -> TokenPayload:
-    """
-    Require authentication - raises 401 if no valid token.
-
-    Args:
-        user: Current user from get_current_user dependency
-
-    Returns:
-        TokenPayload of the authenticated user
-
-    Raises:
-        HTTPException: If user is not authenticated
-    """
+    user: Optional[dict] = Depends(get_current_user),
+) -> dict:
+    """Require authentication."""
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authentication required",
             headers={"WWW-Authenticate": "Bearer"},
+        )
+    return user
+
+
+async def require_admin(
+    user: dict = Depends(require_auth),
+) -> dict:
+    """Require admin role."""
+    if user.get("role") != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required",
         )
     return user
