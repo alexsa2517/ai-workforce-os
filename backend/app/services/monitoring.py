@@ -1,115 +1,113 @@
 """
-Monitoring Service - Application metrics and health monitoring
-
-Provides metrics collection, Prometheus-style endpoints,
-and application health reporting.
+Monitoring Service - Prometheus metrics and health tracking
 """
-
 import logging
 import time
-import threading
-from datetime import datetime, timezone
 from typing import Dict, Any, Optional
+from prometheus_client import Counter, Histogram, Gauge, Info, generate_latest, CONTENT_TYPE_LATEST
+from app.core.config import settings
 
 logger = logging.getLogger("ai_workforce.monitoring")
 
+# Prometheus metrics
+REQUEST_COUNT = Counter(
+    "aiworkforce_requests_total",
+    "Total requests",
+    ["method", "endpoint", "status"],
+)
+
+REQUEST_DURATION = Histogram(
+    "aiworkforce_request_duration_seconds",
+    "Request duration in seconds",
+    ["method", "endpoint"],
+    buckets=[0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0],
+)
+
+LLM_REQUESTS = Counter(
+    "aiworkforce_llm_requests_total",
+    "LLM requests by provider",
+    ["provider", "model", "status"],
+)
+
+LLM_TOKENS = Counter(
+    "aiworkforce_llm_tokens_total",
+    "Total tokens used",
+    ["provider", "model", "type"],
+)
+
+LLM_COST = Counter(
+    "aiworkforce_llm_cost_usd_total",
+    "Total LLM cost in USD",
+    ["provider", "model"],
+)
+
+LLM_DURATION = Histogram(
+    "aiworkforce_llm_duration_seconds",
+    "LLM request duration",
+    ["provider"],
+    buckets=[0.5, 1.0, 2.0, 5.0, 10.0, 30.0, 60.0],
+)
+
+AGENT_COUNT = Gauge(
+    "aiworkforce_agents_total",
+    "Number of registered agents",
+    ["status"],
+)
+
+TASK_COUNT = Gauge(
+    "aiworkforce_tasks_total",
+    "Number of tasks by status",
+    ["status"],
+)
+
+APP_INFO = Info("aiworkforce_app", "Application information")
+
 
 class MetricsCollector:
-    """
-    Thread-safe metrics collector for application monitoring.
-
-    Tracks:
-    - Request counts and latencies
-    - Error rates
-    - LLM usage statistics
-    - Agent status
-    """
+    """Metrics collector with Prometheus export."""
 
     def __init__(self):
-        self._lock = threading.Lock()
-        self._counters: Dict[str, int] = {}
-        self._gauges: Dict[str, float] = {}
-        self._histograms: Dict[str, list] = {}
         self._start_time = time.time()
+        APP_INFO.info({"version": settings.APP_VERSION, "name": settings.APP_NAME})
 
-    def increment(self, name: str, value: int = 1) -> None:
-        """Increment a counter metric."""
-        with self._lock:
-            self._counters[name] = self._counters.get(name, 0) + value
+    def record_request(self, method: str, endpoint: str, status: int, duration: float):
+        """Record HTTP request metrics."""
+        REQUEST_COUNT.labels(method=method, endpoint=endpoint, status=str(status)).inc()
+        REQUEST_DURATION.labels(method=method, endpoint=endpoint).observe(duration)
 
-    def set_gauge(self, name: str, value: float) -> None:
-        """Set a gauge metric."""
-        with self._lock:
-            self._gauges[name] = value
+    def record_llm_request(
+        self,
+        provider: str,
+        model: str,
+        status: str,
+        prompt_tokens: int,
+        completion_tokens: int,
+        cost_usd: float,
+        duration: float,
+    ):
+        """Record LLM usage metrics."""
+        LLM_REQUESTS.labels(provider=provider, model=model, status=status).inc()
+        LLM_TOKENS.labels(provider=provider, model=model, type="prompt").inc(prompt_tokens)
+        LLM_TOKENS.labels(provider=provider, model=model, type="completion").inc(completion_tokens)
+        LLM_COST.labels(provider=provider, model=model).inc(cost_usd)
+        LLM_DURATION.labels(provider=provider).observe(duration)
 
-    def observe(self, name: str, value: float) -> None:
-        """Observe a histogram metric."""
-        with self._lock:
-            if name not in self._histograms:
-                self._histograms[name] = []
-            self._histograms[name].append(value)
+    def set_agent_count(self, status: str, count: int):
+        """Set agent count gauge."""
+        AGENT_COUNT.labels(status=status).set(count)
 
-    def get_all(self) -> Dict[str, Any]:
-        """Get all metrics."""
-        with self._lock:
-            uptime = time.time() - self._start_time
-            return {
-                "uptime_seconds": round(uptime, 2),
-                "counters": dict(self._counters),
-                "gauges": dict(self._gauges),
-                "histograms": {
-                    name: {
-                        "count": len(values),
-                        "sum": sum(values),
-                        "avg": sum(values) / len(values) if values else 0,
-                    }
-                    for name, values in self._histograms.items()
-                },
-            }
+    def set_task_count(self, status: str, count: int):
+        """Set task count gauge."""
+        TASK_COUNT.labels(status=status).set(count)
 
-    def get_prometheus_format(self) -> str:
-        """Export metrics in Prometheus text format."""
-        with self._lock:
-            lines = []
-            lines.append(f"# TYPE uptime_seconds gauge")
-            lines.append(f"uptime_seconds {time.time() - self._start_time:.2f}")
-            lines.append("")
+    def get_prometheus_metrics(self) -> bytes:
+        """Export metrics in Prometheus format."""
+        return generate_latest()
 
-            for name, value in self._counters.items():
-                lines.append(f"# TYPE {name} counter")
-                lines.append(f"{name} {value}")
-            lines.append("")
-
-            for name, value in self._gauges.items():
-                lines.append(f"# TYPE {name} gauge")
-                lines.append(f"{name} {value}")
-            lines.append("")
-
-            for name, values in self._histograms.items():
-                if values:
-                    lines.append(f"# TYPE {name} histogram")
-                    lines.append(f"{name}_count {len(values)}")
-                    lines.append(f"{name}_sum {sum(values):.4f}")
-            lines.append("")
-
-            return "\n".join(lines)
-
-    # Predefined metric helpers
-
-    def track_request(self, method: str, path: str, status: int, duration: float) -> None:
-        """Track an API request."""
-        self.increment(f"requests_total")
-        self.increment(f"requests_{method}_{path.replace('/', '_').strip('_')}")
-        self.observe(f"request_duration_seconds", duration)
-        if status >= 400:
-            self.increment(f"errors_total")
-
-    def track_llm_call(self, provider: str, tokens_used: int, duration: float) -> None:
-        """Track an LLM API call."""
-        self.increment(f"llm_calls_{provider}")
-        self.increment(f"llm_tokens_{provider}", tokens_used)
-        self.observe(f"llm_latency_{provider}", duration)
+    def get_uptime_seconds(self) -> float:
+        """Get application uptime."""
+        return time.time() - self._start_time
 
 
-# Global metrics instance
+# Global instance
 metrics = MetricsCollector()
