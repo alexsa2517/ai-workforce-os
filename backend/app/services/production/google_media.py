@@ -20,10 +20,12 @@ class GoogleMediaProvider:
 
     def generate_video(self, prompt: str, output_path: str, aspect_ratio: str = "9:16") -> str:
         """Generate an 8-second video with Veo 3.1 and save it locally."""
+        from google.genai import types
+
         operation = self.client.models.generate_videos(
             model=settings.GOOGLE_VIDEO_MODEL,
             prompt=prompt,
-            config={"aspect_ratio": aspect_ratio},
+            config=types.GenerateVideosConfig(aspect_ratio=aspect_ratio),
         )
         while not operation.done:
             time.sleep(10)
