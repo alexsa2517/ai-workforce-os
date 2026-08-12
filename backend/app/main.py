@@ -37,21 +37,26 @@ app.add_middleware(
     allow_origins=settings.CORS_ORIGINS,
     allow_credentials=settings.CORS_ALLOW_CREDENTIALS,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["*"]
 )
 app.add_middleware(LoggingMiddleware)
 app.add_middleware(APIKeyMiddleware)
 setup_error_handlers(app)
 
-from app.routers import chat, health, agents, voice
+from app.routers import chat, health, agents, voice, production
 
 app.include_router(health.router)
 app.include_router(chat.router)
 app.include_router(agents.router)
 app.include_router(agents.director_router)
 app.include_router(voice.router)
+app.include_router(production.router)
 
 
 @app.get("/")
 async def root():
-    return {"message": "AI Workforce OS is running", "logging": "Active"}
+    return {
+        "message": "AI Workforce OS is running",
+        "version": settings.APP_VERSION,
+        "media_mode": "real" if settings.REAL_MEDIA_ENABLED else "mock",
+    }
