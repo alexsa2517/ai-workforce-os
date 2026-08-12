@@ -11,21 +11,21 @@ def test_root_reports_service():
     body = response.json()
     assert body["message"] == "AI Workforce OS is running"
     assert "version" in body
+    assert body["media_mode"] in {"mock", "real"}
 
 
 def test_health_contract():
-    response = client.get("/health")
-    assert response.status_code in (200, 503)
+    response = client.get("/api/v1/health/")
+    assert response.status_code == 200
     body = response.json()
-    assert "status" in body
-    assert body["status"] in {"healthy", "unhealthy"}
+    assert body["status"] in {"healthy", "degraded"}
+    assert "database" in body["services"]
 
 
 def test_ready_contract():
-    response = client.get("/ready")
-    assert response.status_code in (200, 503)
+    response = client.get("/api/v1/health/ready")
+    assert response.status_code == 200
     body = response.json()
-    assert "ready" in body
     assert isinstance(body["ready"], bool)
 
 
