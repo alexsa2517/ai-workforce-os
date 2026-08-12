@@ -1,7 +1,6 @@
 """
 Application Configuration
 Central configuration management using environment variables.
-All settings can be overridden via .env file or environment variables.
 """
 from pathlib import Path
 from typing import List
@@ -27,7 +26,7 @@ class Settings(BaseSettings):
     )
 
     APP_NAME: str = Field(default="AI Workforce OS")
-    APP_VERSION: str = Field(default="0.2.0")
+    APP_VERSION: str = Field(default="0.3.0")
     APP_HOST: str = Field(default="0.0.0.0")
     APP_PORT: int = Field(default=8000)
     APP_DEBUG: bool = Field(default=False)
@@ -35,7 +34,9 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = Field(default="")
     OPENAI_MODEL: str = Field(default="gpt-4o")
     GOOGLE_API_KEY: str = Field(default="")
-    GEMINI_MODEL: str = Field(default="gemini-1.5-pro")
+    GEMINI_MODEL: str = Field(default="gemini-3.1-flash-image")
+    GOOGLE_IMAGE_MODEL: str = Field(default="gemini-3.1-flash-image")
+    GOOGLE_VIDEO_MODEL: str = Field(default="veo-3.1-generate-preview")
     DEEPSEEK_API_KEY: str = Field(default="")
     DEEPSEEK_MODEL: str = Field(default="deepseek-v4-flash")
     DEEPSEEK_BASE_URL: str = Field(default="https://api.deepseek.com")
@@ -74,13 +75,12 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = Field(default="INFO")
     LOG_FILE: str = Field(default="logs/ai_workforce.log")
 
-    CORS_ORIGINS: List[str] = Field(
-        default=["http://localhost:3000", "http://localhost:5173"]
-    )
+    CORS_ORIGINS: List[str] = Field(default=["http://localhost:3000", "http://localhost:5173"])
     CORS_ALLOW_CREDENTIALS: bool = Field(default=True)
 
     DIRECTOR_AI_ENABLED: bool = Field(default=True)
     KNOWLEDGE_BASE_PATH: str = Field(default="./knowledge/director-ai")
+    REAL_MEDIA_ENABLED: bool = Field(default=False)
 
 
 settings = Settings()
