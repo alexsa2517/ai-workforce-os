@@ -2,9 +2,18 @@ from fastapi import Request, HTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 import os
 
+
 class APIKeyMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        exempt_paths = ["/", "/docs", "/redoc", "/openapi.json", "/health"]
+        exempt_paths = {
+            "/",
+            "/docs",
+            "/redoc",
+            "/openapi.json",
+            "/health",
+            "/api/v1/health/",
+            "/api/v1/health/ready",
+        }
         if request.url.path in exempt_paths:
             return await call_next(request)
         expected_key = os.getenv("APP_API_KEY")
