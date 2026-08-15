@@ -126,6 +126,25 @@ class VoiceService:
             logger.error(f"Deepgram TTS error: {e}", exc_info=True)
             return {"status": "error", "message": str(e)}
 
+    @staticmethod
+    def select_voice(character_voice_data: dict, provider: str = "openai") -> str:
+        """
+        Select a voice ID based on character voice data.
+        """
+        gender = character_voice_data.get("gender", "female").lower()
+        age = character_voice_data.get("age", "young").lower()
+        archetype = character_voice_data.get("archetype", "").lower()
+        
+        if provider == "openai":
+            if archetype == "wise guide":
+                return "shimmer" # Calm and melodic
+            if gender == "male":
+                return "onyx" if age == "old" else "echo"
+            else:
+                return "nova" if age == "young" else "shimmer"
+        
+        return "alloy"
+
     def get_available_voices(self) -> list:
         """Get available voices based on current provider."""
         if self.provider == "openai":

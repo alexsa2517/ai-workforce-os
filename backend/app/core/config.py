@@ -44,9 +44,9 @@ class Settings(BaseSettings):
     # LLM Provider API Keys
     # ============================================
     OPENAI_API_KEY: str = Field(default="", description="OpenAI API key")
-    OPENAI_MODEL: str = Field(default="gpt-4o", description="OpenAI model name")
+    OPENAI_MODEL: str = Field(default="gpt-5-mini", description="OpenAI model name")
     GOOGLE_API_KEY: str = Field(default="AQ." + "Ab8RN6I6om9lmHQpmQpNhQfVXbARhztTE_INRfUhh4-Tb3W0mA", description="Google API key")
-    GEMINI_MODEL: str = Field(default="gemini-1.5-pro", description="Gemini model name")
+    GEMINI_MODEL: str = Field(default="gemini-2.5-flash", description="Gemini model name")
     DEEPSEEK_API_KEY: str = Field(default="", description="DeepSeek API key")
     DEEPSEEK_MODEL: str = Field(default="deepseek-v4-flash", description="DeepSeek model name (deepseek-v4-flash or deepseek-v4-pro)")
     DEEPSEEK_BASE_URL: str = Field(default="https://api.deepseek.com", description="DeepSeek API base URL")
@@ -80,7 +80,7 @@ class Settings(BaseSettings):
     TTS_VOICE: str = Field(default="alloy", description="TTS voice")
     TTS_MODEL: str = Field(default="tts-1", description="TTS model")
     TTS_SPEED: float = Field(default=1.0, description="TTS playback speed")
-    TTS_LANGUAGE: str = Field(default="th", description="TTS language code")
+    TTS_LANGUAGE: str = Field(default="en-US", description="TTS language")
 
     # Deepgram TTS
     DEEPGRAM_API_KEY: str = Field(default="", description="Deepgram API key")
@@ -118,10 +118,18 @@ class Settings(BaseSettings):
     )
 
     # ============================================
+    # YouTube Settings
+    # ============================================
+    YOUTUBE_ENABLED: bool = Field(default=False, description="Enable YouTube auto-upload")
+    YOUTUBE_CLIENT_SECRETS_FILE: str = Field(default="youtube_credentials.json", description="YouTube client secrets file")
+    YOUTUBE_TOKEN_FILE: str = Field(default="youtube_token.json", description="YouTube OAuth token file")
+    YOUTUBE_DEFAULT_PRIVACY: str = Field(default="public", description="Default privacy status (public, private, unlisted)")
+
+    # ============================================
     # Character Settings
     # ============================================
     CHARACTER_FILE: str = Field(
-        default="linhfeng.json", description="Default character file"
+        default="aera.json", description="Default character file"
     )
     WORLD_FILE: str = Field(default="ancient-world.json", description="Default world file")
 
