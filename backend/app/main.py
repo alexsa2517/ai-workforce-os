@@ -30,14 +30,15 @@ app.add_middleware(LoggingMiddleware)
 app.add_middleware(APIKeyMiddleware)
 setup_error_handlers(app)
 
-from app.routers import chat, health, agents, voice, money_lab
+from app.routers import chat, health, agents, voice, money_lab, operator
 app.include_router(health.router)
 app.include_router(chat.router)
 app.include_router(agents.router)
 app.include_router(agents.director_router)
 app.include_router(voice.router)
 app.include_router(money_lab.router)
+app.include_router(operator.router)
 
 @app.get("/")
 async def root():
-    return {"message": "AI Workforce OS is running", "database": "Active", "logging": "Active", "ai_money_lab": "Active"}
+    return {"message": "AI Workforce OS is running", "database": "Active", "logging": "Active", "ai_money_lab": "Active", "operator": "Active"}
