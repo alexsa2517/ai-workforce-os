@@ -2,102 +2,89 @@
 
 Build the Operating System for AI Employees.
 
-## Mission
+## New: AI Money Lab V1
 
-Help businesses deploy AI Employees in minutes.
+AI Money Lab turns the existing multi-LLM foundation into a small **AI Venture Studio**. A business brief is sent to independent specialist models in parallel, then a CEO model synthesizes the evidence into a GO / TEST / NO-GO decision and a low-cost validation experiment.
 
-## Vision
+### Default AI team
 
-The Operating System for AI Employees.
+| Role | Provider | Responsibility |
+|---|---|---|
+| CEO | OpenAI | Synthesis and final decision |
+| Research | Gemini | Market, demand, competitors |
+| Business | OpenAI | Offer, customer and GTM |
+| Finance | DeepSeek | Unit economics and costs |
+| Technology | DeepSeek | MVP architecture |
+| Critic | Kimi | Red-team / failure analysis |
+| Operator | Manus | Execute validated tasks |
 
-## Project Structure
+The design deliberately keeps provider adapters separate. If one provider is unavailable, the board can still return the other reports instead of crashing the whole run.
 
-This project is structured into several key components:
+### API
 
-- `agents`: Contains the core AI agents, such as `DirectorAI`.
-- `api`: Defines the API endpoints for interacting with the AI Workforce OS.
-- `backend`: Houses the FastAPI application, services, and agent implementations.
-- `database`: Placeholder for database-related configurations and migrations.
-- `deployment`: Contains deployment scripts and configurations.
-- `docs`: Comprehensive documentation for the project, including architecture, API, and agent specifics.
-- `frontend`: Frontend application code.
-- `knowledge`: Stores knowledge bases for AI agents, e.g., character data for `DirectorAI`.
-- `tests`: Unit and integration tests.
+`POST /api/v1/money-lab/run`
 
-## Setup and Installation
+```json
+{
+  "brief": "Build a service for Thai SMEs that automates lead follow-up with AI.",
+  "goal": "Reach the first 10,000 THB of revenue with minimal upfront cost"
+}
+```
 
-To set up and run the project locally, follow these steps:
+`GET /api/v1/money-lab/team` returns the current team and routing.
 
-1.  **Clone the repository:**
+`POST /api/v1/operator/manus/task` sends an approved execution task to Manus API v2.
 
-    ```bash
-    git clone https://github.com/alexsa2517/ai-workforce-os.git
-    cd ai-workforce-os
-    ```
+### Architecture
 
-2.  **Create a Python virtual environment and activate it:**
+```text
+User brief
+   |
+   +--> Research (Gemini) ----+
+   +--> Business (OpenAI) ----+
+   +--> Finance (DeepSeek) ---+--> CEO synthesis (OpenAI)
+   +--> Technology (DeepSeek)-+
+   +--> Critic (Kimi) --------+
+                                  |
+                              GO / TEST / NO-GO
+                                  |
+                            validation plan
+                                  |
+                              Manus Operator
+```
 
-    ```bash
-    python3 -m venv venv
-    source venv/bin/activate
-    ```
+Manus API v2 supports programmatic tasks, projects, files, webhooks and connectors; this repository uses it as the execution layer after the board reaches a decision. See the official Manus API documentation for current endpoint details.
 
-3.  **Install backend dependencies:**
+## Setup
 
-    ```bash
-    pip install -r backend/requirements.txt
-    ```
+```bash
+git clone https://github.com/alexsa2517/ai-workforce-os.git
+cd ai-workforce-os
+python3 -m venv venv
+source venv/bin/activate
+pip install -r backend/requirements.txt
+cp .env.example .env
+```
 
-4.  **Set up environment variables:**
+Fill in API keys for the providers you want to activate. The Money Lab can run with a subset of providers, but a full board requires OpenAI, Gemini, DeepSeek and Kimi; Manus is only required for execution.
 
-    Create a `.env` file in the `backend` directory with your API keys:
-
-    ```
-    OPENAI_API_KEY="your_openai_api_key"
-    GEMINI_API_KEY="your_gemini_api_key"
-    ```
-
-## Running the Application
-
-To run the FastAPI backend:
+Run:
 
 ```bash
 cd backend
 uvicorn app.main:app --reload
 ```
 
-The API will be accessible at `http://127.0.0.1:8000`.
+The API is available at `http://127.0.0.1:8000`.
 
-## DirectorAI
+## Existing capabilities
 
-The `DirectorAI` agent is responsible for generating scenes based on loaded knowledge. It uses `memory_loader.py` to load character, world, and episode data from the `knowledge/director-ai` directory.
+The repository also contains DirectorAI, voice/media functionality, a FastAPI backend, database support, and the existing OpenAI/Gemini/DeepSeek LLM factory.
 
-## LLM Services
+## Security
 
-The project integrates with various Large Language Models (LLMs) through a factory pattern. The `LLMFactory` in `backend/app/services/llm/factory.py` provides a unified interface to interact with different LLM providers such as OpenAI and Gemini.
+API keys belong in `.env` or a secret manager, never in source code. If an API key has previously been committed to the repository, rotate/revoke it at the provider before using the system in production.
 
-## AI Development Tools
+## License
 
-This project is optimized for AI-assisted development:
-
-- **Aider:** You can use [Aider](https://aider.chat/) to collaborate with LLMs (like DeepSeek or GPT-4o) directly in your terminal to edit and create files.
-- **Environment Setup:** Ensure you have your `DEEPSEEK_API_KEY`, `OPENAI_API_KEY`, or `GOOGLE_API_KEY` set in your environment or a `.env` file to enable AI features.
-
-## DeepSeek V4 Migration (July 2026)
-
-As of July 24, 2026, DeepSeek has deprecated the legacy model names `deepseek-chat` and `deepseek-reasoner`. This project has been updated to support the new **DeepSeek V4 API**:
-
-- **Default Model:** `deepseek-v4-flash` (replaces `deepseek-chat`)
-- **Pro Model:** `deepseek-v4-pro` (replaces `deepseek-reasoner`)
-- **Base URL:** `https://api.deepseek.com` (configurable)
-- **Legacy Support:** Automatic mapping of old model names to V4 equivalents.
-
-## Bug Fixes and Improvements (July 2026)
-
--   **DeepSeek V4 Migration:** Fully updated DeepSeek client to support V4 API and deprecated legacy model names.
--   **Enhanced Error Handling:** Improved LLM clients (OpenAI, Gemini, DeepSeek) with better API key validation and clear error messages.
--   **Fixed `knowledge` directory path:** Corrected the directory name from `" director-ai"` to `"director-ai"`.
--   **Corrected LLM service imports:** Adjusted import paths in `backend/app/services/llm/factory.py`.
--   **Updated OpenAI model:** Changed the OpenAI model to `gpt-4o`.
--   **Updated Gemini integration:** Refactored to use `google.generativeai` and updated to `gemini-1.5-pro`.
--   **Updated `requirements.txt`:** Updated all dependencies to latest stable versions.
+MIT
