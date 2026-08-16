@@ -1,26 +1,15 @@
-"""
-LLM Factory - Unified interface for creating LLM clients.
-Supports OpenAI, Gemini, and DeepSeek providers.
-Dynamic loading version to handle restricted environments.
-"""
+"""Unified factory for AI Money Lab and existing agents."""
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 logger = logging.getLogger("ai_workforce.llm.factory")
 
 class LLMFactory:
-    """Factory for creating LLM Client instances with dynamic loading."""
-
     _instances: Dict[str, Any] = {}
 
     @classmethod
     def get(cls, provider: str):
-        """
-        Get an LLM client instance for the specified provider.
-        Loads the provider class only when requested.
-        """
         provider = provider.lower()
-        
         if provider not in cls._instances:
             try:
                 if provider == "openai":
@@ -32,18 +21,20 @@ class LLMFactory:
                 elif provider == "gemini":
                     from .gemini import GeminiClient
                     cls._instances[provider] = GeminiClient()
+                elif provider == "kimi":
+                    from .kimi import KimiClient
+                    cls._instances[provider] = KimiClient()
+                elif provider in ("claude", "anthropic"):
+                    from .claude import ClaudeClient
+                    cls._instances[provider] = ClaudeClient()
                 else:
                     raise ValueError(f"Unsupported LLM provider: {provider}")
-                
-                logger.info(f"Successfully created LLM client for: {provider}")
-            except Exception as e:
-                logger.error(f"Failed to load LLM provider '{provider}': {e}")
-                raise RuntimeError(f"LLM provider '{provider}' is not available: {e}")
-            
+                logger.info("Created LLM client for %s", provider)
+            except Exception as exc:
+                logger.error("Failed to load LLM provider '%s': %s", provider, exc)
+                raise RuntimeError(f"LLM provider '{provider}' is not available: {exc}") from exc
         return cls._instances[provider]
 
     @classmethod
     def clear_cache(cls):
-        """Clear cached LLM client instances."""
         cls._instances.clear()
-        logger.info("LLM client cache cleared")
